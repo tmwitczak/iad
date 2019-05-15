@@ -62,10 +62,10 @@ namespace NeuralNetworks
 
     //------------------------------------------------------- | Constructors <<<
     MultiLayerPerceptron::MultiLayerPerceptron
-            (std::vector<int> const &numberOfNeuronsPerLayer,
+            (std::vector<int> const &numberOfNeurons,
              std::vector<bool> const &enableBiasPerLayer)
             :
-            layers { createLayers(numberOfNeuronsPerLayer,
+            layers { createLayers(numberOfNeurons,
                                   enableBiasPerLayer) }
     {
     }
