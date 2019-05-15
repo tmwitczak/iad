@@ -59,18 +59,6 @@ int main()
 //    cout << "targets:\n\n" << example2.outputs << "\n\n";
 //-------------------------------------------------------------
 
-    PerceptronLayer test { 2, 4 };
-    test.saveToFile("testSerializacji");
-
-    PerceptronLayer test2 { "testSerializacji" };
-
-    std::cout << test.feedForward
-            ((Vector { 2 } << 0.5, 0.6).finished()) << "\n\n";
-    std::cout << test2.feedForward
-            ((Vector { 2 } << 0.5, 0.6).finished()) << "\n\n";
-
-    system("pause");
-
     //-------------------------------------------------------------
 
 
@@ -102,7 +90,7 @@ int main()
                     }
             };
 
-    int const numberOfEpochs = 100;
+    int const numberOfEpochs = 10000;
     double const costGoal = 0.00001;
     double const learningCoefficient = 0.2;
     double const learningCoefficientChange = -0.1;
@@ -116,16 +104,17 @@ int main()
               shuffleTrainingData);
 
     mlp.saveToFile("multi-layer-perceptron.mlp");
-
     MultiLayerPerceptron loadedFromFile { "multi-layer-perceptron.mlp" };
 
     using std::cout;
     using std::endl;
     cout << endl;
     cout << mlp((Vector { n } << 1.0, 0.0, 0.0, 0.0).finished()) << "\n\n";
-    cout << mlp((Vector { n } << 0.0, 1.0, 0.0, 0.0).finished()) << "\n\n";
-    cout << mlp((Vector { n } << 0.0, 0.0, 1.0, 0.0).finished()) << "\n\n";
-    cout << mlp((Vector { n } << 0.0, 0.0, 0.0, 1.0).finished()) << "\n\n";
+    cout << loadedFromFile((Vector { n } << 1.0, 0.0, 0.0, 0.0).finished()) <<
+    "\n\n";
+//    cout << mlp((Vector { n } << 0.0, 1.0, 0.0, 0.0).finished()) << "\n\n";
+//    cout << mlp((Vector { n } << 0.0, 0.0, 1.0, 0.0).finished()) << "\n\n";
+//    cout << mlp((Vector { n } << 0.0, 0.0, 0.0, 1.0).finished()) << "\n\n";
 
 
 //    using namespace NeuralNetworks;

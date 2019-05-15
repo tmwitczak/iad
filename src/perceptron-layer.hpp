@@ -25,13 +25,13 @@ namespace NeuralNetworks
                 (int const &seed);
 
         //--------------------------------------------------- | Constructors <<<
-        PerceptronLayer
-                (int const &numberOfInputs,
-                 int const &numberOfOutputs,
+        explicit PerceptronLayer
+                (int const &numberOfInputs = 0,
+                 int const &numberOfOutputs = 0,
                  ActivationFunction const &activationFunction = Sigmoid {},
                  bool const &enableBias = true);
 
-        PerceptronLayer
+        explicit PerceptronLayer
                 (std::string const &filename);
 
         //------------------------------------------------------ | Operators <<<

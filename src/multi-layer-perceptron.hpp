@@ -22,7 +22,7 @@ namespace NeuralNetworks
 
         //--------------------------------------------------- | Constructors <<<
         explicit MultiLayerPerceptron
-                (std::vector<int> const &numberOfNeuronsPerLayer,
+                (std::vector<int> const &numberOfNeuronsPerLayer = {1, 1},
                  std::vector<bool> const &enableBiasPerLayer = {});
 
         explicit MultiLayerPerceptron
@@ -56,6 +56,17 @@ namespace NeuralNetworks
         std::vector<PerceptronLayer> layers;
 
         //========================================================= | Methods <<
+        //-------------------------------------------------- | Serialization <<<
+        friend class cereal::access;
+
+        template <typename Archive>
+        void save
+                (Archive &archive) const;
+
+        template <typename Archive>
+        void load
+                (Archive &archive);
+
         //------------------------------------------------- | Helper methods <<<
         std::vector<PerceptronLayer> createLayers
                 (std::vector<int> const &numberOfNeuronsPerLayer,

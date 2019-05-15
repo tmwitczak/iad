@@ -9,6 +9,8 @@
 #include <fstream>
 #include <sstream>
 
+#include <cereal/types/vector.hpp>
+
 ///////////////////////////////////////////////////// | TODO: Name this section.
 using Array = Eigen::ArrayXd;
 using Matrix = Eigen::MatrixXd;
@@ -70,8 +72,15 @@ namespace NeuralNetworks
 
     MultiLayerPerceptron::MultiLayerPerceptron
             (std::string const &filename)
+            :
+            MultiLayerPerceptron({1, 1}, {true, true})
     {
-        readFromFile(filename);
+        std::ifstream file(filename, std::ios::in | std::ios::binary);
+        {
+            cereal::BinaryInputArchive binaryInputArchive(file);
+            binaryInputArchive(*this);
+        }
+        file.close();
     }
 
     //---------------------------------------------------------- | Operators <<<
@@ -220,12 +229,38 @@ namespace NeuralNetworks
     void MultiLayerPerceptron::saveToFile
             (std::string const &filename) const
     {
-        layers.at(0).saveToFile(filename);
+        std::ofstream file;
+        file.open(filename, std::ios::out | std::ios::binary | std::ios::trunc);
+        {
+            cereal::BinaryOutputArchive binaryOutputArchive(file);
+            binaryOutputArchive(*this);
+        }
+        file.close();
+    }
+
+    template <typename Archive>
+    void MultiLayerPerceptron::save
+            (Archive &archive) const
+    {
+        archive(layers);
+    }
+
+    template <typename Archive>
+    void MultiLayerPerceptron::load
+            (Archive &archive)
+    {
+        archive(layers);
     }
 
     void MultiLayerPerceptron::readFromFile
             (std::string const &filename)
     {
+        std::ifstream file(filename, std::ios::in | std::ios::binary);
+        {
+            cereal::BinaryInputArchive binaryInputArchive(file);
+            binaryInputArchive(*this);
+        }
+        file.close();
 //        std::ifstream file;
 //        file.open(filename);
 //        {
