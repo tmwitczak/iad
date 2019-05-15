@@ -1,14 +1,15 @@
 ///////////////////////////////////////////////////////////////////// | Includes
 #include "perceptron-layer.hpp"
 
-#include <cereal/cereal.hpp>
 #include <cereal/archives/binary.hpp>
-#include <cereal/types/memory.hpp>
+#include <cereal/cereal.hpp>
 #include <cereal/types/base_class.hpp>
+#include <cereal/types/memory.hpp>
+
+#include <fstream>
+#include <iostream>
 #include <memory>
 #include <utility>
-#include <iostream>
-#include <fstream>
 
 ////////////////////////////////////////////////////// TODO: Name this section.
 using Array = Eigen::ArrayXd;
@@ -83,6 +84,13 @@ namespace NeuralNetworks
 
     //------------------------------------------------------- | Constructors <<<
     PerceptronLayer::PerceptronLayer
+            ()
+            :
+            PerceptronLayer(1, 1)
+    {
+    }
+
+    PerceptronLayer::PerceptronLayer
             (int const numberOfInputs,
              int const numberOfOutputs,
              ActivationFunction const &activationFunction,
@@ -91,9 +99,11 @@ namespace NeuralNetworks
             weights { Matrix::Random(numberOfOutputs, numberOfInputs) },
             deltaWeights { Matrix::Zero(numberOfOutputs, numberOfInputs) },
             momentumWeights { Matrix::Zero(numberOfOutputs, numberOfInputs) },
+
             biases { Vector::Random(numberOfOutputs) },
             deltaBiases { Vector::Zero(numberOfOutputs) },
             momentumBiases { Vector::Zero(numberOfOutputs) },
+
             activationFunction { activationFunction.clone() },
             currentNumberOfSteps { 0 },
             isBiasEnabled { enableBias }

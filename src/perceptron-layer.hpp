@@ -15,8 +15,7 @@
 namespace NeuralNetworks
 {
     ///////////////////////////////////////////////// | Class: PerceptronLayer <
-    class PerceptronLayer
-    final
+    class PerceptronLayer final
     {
     public:
         //========================================================= | Methods <<
@@ -25,9 +24,12 @@ namespace NeuralNetworks
                 (int seed);
 
         //--------------------------------------------------- | Constructors <<<
+        PerceptronLayer
+                ();
+
         explicit PerceptronLayer
-                (int numberOfInputs = 0,
-                 int numberOfOutputs = 0,
+                (int numberOfInputs,
+                 int numberOfOutputs,
                  ActivationFunction const &activationFunction = Sigmoid {},
                  bool enableBias = true);
 
