@@ -24,7 +24,7 @@ add_executable(iad-2a
                multi-layer-perceptron.hpp
                perceptron-layer.cpp
                perceptron-layer.hpp
-               training-example.hpp activation-function.cpp activation-function.hpp cloneable.cpp cloneable.hpp sigmoid.cpp sigmoid.hpp rectified-linear-unit.cpp rectified-linear-unit.hpp parametric-rectified-linear-unit.cpp parametric-rectified-linear-unit.hpp)
+               training-example.hpp activation-function.cpp activation-function.hpp cloneable.hpp sigmoid.cpp sigmoid.hpp rectified-linear-unit.cpp rectified-linear-unit.hpp parametric-rectified-linear-unit.cpp parametric-rectified-linear-unit.hpp)
 
 # Add include directories
 target_include_directories(iad-2a PRIVATE

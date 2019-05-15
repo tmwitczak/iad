@@ -10,14 +10,8 @@ namespace NeuralNetworks
     template <typename T>
     class Cloneable
     {
-    public:
-        //========================================================= | Methods <<
-        //------------------------------------------------- | Main behaviour <<<
-        virtual std::unique_ptr<T> clone
-                () const = 0;
-
     protected:
-        //========================================================= | Methods <<
+        //======================================================= | Behaviour <<
         //--------------------------------------------------- | Constructors <<<
         Cloneable
                 () = default;
@@ -38,8 +32,16 @@ namespace NeuralNetworks
         //----------------------------------------------------- | Destructor <<<
         virtual ~Cloneable
                 () noexcept = 0;
+
+    private:
+        //======================================================= | Behaviour <<
+        //------------------------------------------------- | Main behaviour <<<
+        virtual std::unique_ptr<T> clone
+                () const = 0;
     };
 
+    //============================================================= | Methods <<
+    //--------------------------------------------------------- | Destructor <<<
     template <typename T>
     inline Cloneable<T>::~Cloneable
             () noexcept = default;
