@@ -41,12 +41,12 @@ namespace NeuralNetworks
 
         /*TrainingResults*/void train
                 (std::vector<TrainingExample> const &trainingExamples,
-                 int const numberOfEpochs,
-                 double const costGoal,
+                 int numberOfEpochs,
+                 double costGoal,
                  double learningCoefficient,
-                 double const learningCoefficientChange = 0.0,
-                 double const momentumCoefficient = 0.0,
-                 bool const shuffleTrainingData = true);
+                 double learningCoefficientChange = 0.0,
+                 double momentumCoefficient = 0.0,
+                 bool shuffleTrainingData = true);
 
         void saveToFile
                 (std::string const &filename) const;
