@@ -22,14 +22,14 @@ namespace NeuralNetworks
         //========================================================= | Methods <<
         //------------------------------------------------- | Static methods <<<
         static void initialiseRandomSeed
-                (int const &seed);
+                (int seed);
 
         //--------------------------------------------------- | Constructors <<<
         explicit PerceptronLayer
-                (int const &numberOfInputs = 0,
-                 int const &numberOfOutputs = 0,
+                (int numberOfInputs = 0,
+                 int numberOfOutputs = 0,
                  ActivationFunction const &activationFunction = Sigmoid {},
-                 bool const &enableBias = true);
+                 bool enableBias = true);
 
         explicit PerceptronLayer
                 (std::string const &filename);
@@ -52,8 +52,8 @@ namespace NeuralNetworks
                  Eigen::VectorXd const &outputs);
 
         void update
-                (double const &learningCoefficient,
-                 double const &momentumCoefficient);
+                (double learningCoefficient,
+                 double momentumCoefficient);
 
         void saveToFile
                 (std::string const &filename) const;
@@ -87,8 +87,8 @@ namespace NeuralNetworks
 
         //----------------------------------------------- | Helper functions <<<
         void applyAverageOfDeltaStepsToMomentumStep
-                (double const learningCoefficient,
-                 double const momentumCoefficient);
+                (double learningCoefficient,
+                 double momentumCoefficient);
 
         void applyMomentumStepToWeightsAndBiases
                 ();

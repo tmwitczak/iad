@@ -55,17 +55,17 @@ namespace NeuralNetworks
     //============================================================= | Methods <<
     //----------------------------------------------------- | Static methods <<<
     void PerceptronLayer::initialiseRandomSeed
-            (int const &seed)
+            (int const seed)
     {
         srand(static_cast<unsigned int>(seed));
     }
 
     //------------------------------------------------------- | Constructors <<<
     PerceptronLayer::PerceptronLayer
-            (int const &numberOfInputs,
-             int const &numberOfOutputs,
+            (int const numberOfInputs,
+             int const numberOfOutputs,
              ActivationFunction const &activationFunction,
-             bool const &enableBias)
+             bool const enableBias)
             :
             weights { Matrix::Random(numberOfOutputs, numberOfInputs) },
             deltaWeights { Matrix::Zero(numberOfOutputs, numberOfInputs) },
@@ -211,8 +211,8 @@ namespace NeuralNetworks
     }
 
     void PerceptronLayer::update
-            (double const &learningCoefficient,
-             double const &momentumCoefficient)
+            (double const learningCoefficient,
+             double const momentumCoefficient)
     {
         applyAverageOfDeltaStepsToMomentumStep(learningCoefficient,
                                                momentumCoefficient);
