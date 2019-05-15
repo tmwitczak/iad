@@ -21,7 +21,7 @@ namespace NeuralNetworks
     public:
         //========================================================= | Methods <<
         //------------------------------------------------- | Static methods <<<
-        static void initialiseRandomSeed
+        static void initialiseRandomNumberGenerator
                 (int seed);
 
         //--------------------------------------------------- | Constructors <<<

@@ -54,10 +54,10 @@ namespace NeuralNetworks
     //////////////////////////////////////////// | Class: MultiLayerPerceptron <
     //============================================================= | Methods <<
     //----------------------------------------------------- | Static methods <<<
-    void MultiLayerPerceptron::initialiseRandomSeed
+    void MultiLayerPerceptron::initialiseRandomNumberGenerator
             (int const &seed)
     {
-        PerceptronLayer::initialiseRandomSeed(seed);
+        PerceptronLayer::initialiseRandomNumberGenerator(seed);
     }
 
     //------------------------------------------------------- | Constructors <<<

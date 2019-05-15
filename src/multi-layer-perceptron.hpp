@@ -17,7 +17,7 @@ namespace NeuralNetworks
     public:
         //======================================================= | Behaviour <<
         //--------------------------------------------------------- | Static <<<
-        static void initialiseRandomSeed
+        static void initialiseRandomNumberGenerator
                 (int const &seed);
 
         //--------------------------------------------------- | Constructors <<<

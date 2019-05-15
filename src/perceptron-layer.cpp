@@ -54,7 +54,7 @@ namespace NeuralNetworks
     ///////////////////////////////////////////////// | Class: PerceptronLayer <
     //============================================================= | Methods <<
     //----------------------------------------------------- | Static methods <<<
-    void PerceptronLayer::initialiseRandomSeed
+    void PerceptronLayer::initialiseRandomNumberGenerator
             (int const seed)
     {
         srand(static_cast<unsigned int>(seed));

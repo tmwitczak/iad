@@ -67,7 +67,8 @@ int main()
             h = 2,
             m = 4;
 
-    MultiLayerPerceptron::initialiseRandomSeed(static_cast<int>(time(nullptr)));
+    MultiLayerPerceptron::initialiseRandomNumberGenerator(static_cast<int>
+                                                          (time(nullptr)));
     MultiLayerPerceptron mlp { std::vector<int> { n, h, m }};
 
     std::vector<TrainingExample> trainingData
@@ -111,7 +112,7 @@ int main()
     cout << endl;
     cout << mlp((Vector { n } << 1.0, 0.0, 0.0, 0.0).finished()) << "\n\n";
     cout << loadedFromFile((Vector { n } << 1.0, 0.0, 0.0, 0.0).finished()) <<
-    "\n\n";
+         "\n\n";
 //    cout << mlp((Vector { n } << 0.0, 1.0, 0.0, 0.0).finished()) << "\n\n";
 //    cout << mlp((Vector { n } << 0.0, 0.0, 1.0, 0.0).finished()) << "\n\n";
 //    cout << mlp((Vector { n } << 0.0, 0.0, 0.0, 1.0).finished()) << "\n\n";
