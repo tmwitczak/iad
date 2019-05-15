@@ -9,21 +9,21 @@
 //////////////////////////////////////////////////// | Namespace: NeuralNetworks
 namespace NeuralNetworks
 {
-    //////////////////////////////////////////// | Interface: ActivationFunction
+    ////////////////////////////////////////// | Interface: ActivationFunction <
     class ActivationFunction
-            : public Cloneable<ActivationFunction>
+            : private Cloneable<ActivationFunction>
     {
     public:
-        //========================================================== | Methods <
-        //------------------------------------------------------ | Destructor <<
+        //======================================================= | Behaviour <<
+        //----------------------------------------------------- | Destructor <<<
         ~ActivationFunction
                 () noexcept override = 0;
 
-        //----------------------------- | Interface implementation: Cloneable <<
+        //-------------------------- | Interface: Cloneable | Implementation <<<
         std::unique_ptr<ActivationFunction> clone
                 () const override = 0;
 
-        //-------------------------------------------------- | Main behaviour <<
+        //------------------------------------------------- | Main behaviour <<<
         virtual Eigen::ArrayXd operator()
                 (Eigen::ArrayXd const &input) const = 0;
 
