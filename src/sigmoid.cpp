@@ -29,6 +29,19 @@ namespace NeuralNetworks
         Eigen::ArrayXd sigmoidOutput = (*this)(input);
         return sigmoidOutput * (1.0 - sigmoidOutput);
     }
+
+    //---------------------------------------------- | cereal: Serialization <<<
+    template <typename Archive>
+    void Sigmoid::save
+            (Archive &archive) const
+    {
+    }
+
+    template <typename Archive>
+    void Sigmoid::load
+            (Archive &archive)
+    {
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////

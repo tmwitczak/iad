@@ -14,15 +14,6 @@ namespace NeuralNetworks
             : public ActivationFunction
     {
     public:
-        // TODO: Fix serialization
-        template <class Archive>
-        void save(Archive &ar) const
-        {}
-
-        template <class Archive>
-        void load(Archive &ar)
-        {}
-
         //======================================================= | Behaviour <<
         //--------------------------------------------------- | Constructors <<<
         Sigmoid
@@ -55,9 +46,23 @@ namespace NeuralNetworks
 
         Eigen::ArrayXd derivative
                 (Eigen::ArrayXd const &input) const final;
+
+    private:
+        //======================================================= | Behaviour <<
+        //------------------------------------------ | cereal: Serialization <<<
+        friend class cereal::access;
+
+        template <typename Archive>
+        void save
+                (Archive &archive) const;
+
+        template <typename Archive>
+        void load
+                (Archive &archive);
     };
 }
 
+//////////////////////////////////////// | cereal: Polymorphic type registration
 CEREAL_REGISTER_TYPE(NeuralNetworks::Sigmoid)
 CEREAL_REGISTER_POLYMORPHIC_RELATION(NeuralNetworks::ActivationFunction,
                                      NeuralNetworks::Sigmoid)
