@@ -7,11 +7,11 @@
 namespace NeuralNetworks
 {
     ///////////////////////////////////////////// | Class: RectifiedLinearUnit <
-    class ParametricRectifiedLinearUnit
+    class ParametricRectifiedLinearUnit final
             : public ActivationFunction
     {
     public:
-        //========================================================= | Methods <<
+        //======================================================= | Behaviour <<
         //--------------------------------------------------- | Constructors <<<
         ParametricRectifiedLinearUnit
                 () = delete;

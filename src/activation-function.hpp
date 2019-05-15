@@ -23,7 +23,7 @@ namespace NeuralNetworks
         std::unique_ptr<ActivationFunction> clone
                 () const override = 0;
 
-        //------------------------------------------------- | Main behaviour <<<
+        //----------------------------------------------------------- | Main <<<
         virtual Eigen::ArrayXd operator()
                 (Eigen::ArrayXd const &input) const = 0;
 
@@ -31,8 +31,8 @@ namespace NeuralNetworks
                 (Eigen::ArrayXd const &input) const = 0;
 
     protected:
-        //========================================================== | Methods <
-        //---------------------------------------------------- | Constructors <<
+        //======================================================= | Behaviour <<
+        //--------------------------------------------------- | Constructors <<<
         ActivationFunction
                 () = default;
 
@@ -42,7 +42,7 @@ namespace NeuralNetworks
         ActivationFunction
                 (ActivationFunction &&) = default;
 
-        //------------------------------------------------------- | Operators <<
+        //------------------------------------------------------ | Operators <<<
         ActivationFunction &operator=
                 (ActivationFunction const &) = default;
 

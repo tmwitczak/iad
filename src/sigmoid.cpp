@@ -8,15 +8,15 @@ using Array = Eigen::ArrayXd;
 namespace NeuralNetworks
 {
     ///////////////////////////////////////////////////////// | Class: Sigmoid <
-    //============================================================= | Methods <<
-    //-------------------------------- | Interface implementation: Cloneable <<<
+    //=========================================================== | Behaviour <<
+    //------------------------------ | Interface: Cloneable | Implementation <<<
     std::unique_ptr<ActivationFunction> Sigmoid::clone
             () const
     {
         return std::make_unique<Sigmoid>(*this);
     }
 
-    //----------------------- | Interface implementation: ActivationFunction <<<
+    //--------------------- | Interface: ActivationFunction | Implementation <<<
     Array Sigmoid::operator()
             (Array const &input) const
     {

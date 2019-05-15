@@ -5,7 +5,7 @@
 namespace NeuralNetworks
 {
     ////////////////////////////////////////// | Interface: ActivationFunction <
-    //============================================================= | Methods <<
+    //=========================================================== | Behaviour <<
     //--------------------------------------------------------- | Destructor <<<
     ActivationFunction::~ActivationFunction
             () noexcept = default;

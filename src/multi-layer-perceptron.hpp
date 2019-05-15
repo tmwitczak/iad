@@ -15,8 +15,8 @@ namespace NeuralNetworks
     class MultiLayerPerceptron final
     {
     public:
-        //========================================================= | Methods <<
-        //------------------------------------------------- | Static methods <<<
+        //======================================================= | Behaviour <<
+        //--------------------------------------------------------- | Static <<<
         static void initialiseRandomSeed
                 (int const &seed);
 
@@ -32,7 +32,7 @@ namespace NeuralNetworks
         Eigen::VectorXd operator()
                 (Eigen::VectorXd const &inputs) const;
 
-        //------------------------------------------------- | Main behaviour <<<
+        //----------------------------------------------------------- | Main <<<
         Eigen::VectorXd feedForward
                 (Eigen::VectorXd const &inputs) const;
 
@@ -52,10 +52,10 @@ namespace NeuralNetworks
                 (std::string const &filename);
 
     private:
-        //========================================================== | Fields <<
+        //============================================================ | Data <<
         std::vector<PerceptronLayer> layers;
 
-        //========================================================= | Methods <<
+        //======================================================= | Behaviour <<
         //-------------------------------------------------- | Serialization <<<
         friend class cereal::access;
 
@@ -67,7 +67,7 @@ namespace NeuralNetworks
         void load
                 (Archive &archive);
 
-        //------------------------------------------------- | Helper methods <<<
+        //----------------------------------------------- | Helper functions <<<
         std::vector<PerceptronLayer> createLayers
                 (std::vector<int> const &numberOfNeuronsPerLayer,
                  std::vector<bool> enableBiasPerLayer = {}) const;

@@ -9,7 +9,7 @@ namespace NeuralNetworks
     //////////////////////////////////////////////// | Struct: TrainingExample <
     struct TrainingExample
     {
-        //========================================================== | Fields <<
+        //============================================================ | Data <<
         //-------------------------------------------------------- | Vectors <<<
         Eigen::VectorXd inputs;
         Eigen::VectorXd outputs;
