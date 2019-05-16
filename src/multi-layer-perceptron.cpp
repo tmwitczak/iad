@@ -231,6 +231,83 @@ namespace NeuralNetworks
         return trainingResults;
     }
 
+    MultiLayerPerceptron::TestingResults MultiLayerPerceptron::test
+            (std::vector<TrainingExample> const &testingExamples) const
+    {
+        // Prepare results
+        TestingResults testingResults;
+        testingResults.globalCost = 0.0;
+
+        // Create container of layers' iterators
+        std::vector<decltype(layers.begin())>
+                layersIterators;
+
+        for (auto layer = layers.begin();
+             layer != layers.end();
+             ++layer)
+        {
+            layersIterators.emplace_back(layer);
+        }
+
+        // Test the network
+        for (auto const &testingExample
+                : testingExamples)
+        {
+            auto const &firstLayerInputs
+                    = testingExample.inputs;
+
+            std::vector<Vector> neurons
+                    { firstLayerInputs };
+
+            for (auto const &layer
+                    : layersIterators)
+                neurons.emplace_back
+                        (layer->feedForward(neurons.back()));
+
+            auto const &lastLayerOutputs
+                    = neurons.back();
+
+            auto const &lastLayerTargets
+                    = testingExample.outputs;
+
+            auto const lastLayerErrors
+                    = lastLayerTargets - lastLayerOutputs;
+
+            std::vector<Vector> errors
+                    { lastLayerErrors };
+
+            {
+                auto inputs = neurons.crbegin() + 1;
+                for (auto const &layer
+                        : HelperFunctions::reverse(layersIterators))
+                {
+                    errors.emplace_back
+                            (layer->backpropagate
+                                    (*inputs, errors.back()));
+                    ++inputs;
+                }
+                errors = HelperFunctions::reverse(errors);
+            }
+
+            // Calculate cost
+            double cost = errors.back().array().square().sum();
+            testingResults.globalCost += cost;
+
+            // Save testing results per example
+            testingResults.testingResultsPerExample.push_back
+                    ({neurons,
+                     lastLayerTargets,
+                     errors,
+                     cost});
+        }
+
+        // Average out global error
+        testingResults.globalCost /= testingExamples.size();
+
+        // Return testing report
+        return testingResults;
+    }
+
     void MultiLayerPerceptron::saveToFile
             (std::string const &filename) const
     {

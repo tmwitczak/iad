@@ -19,8 +19,26 @@ namespace NeuralNetworks
         //------------------------------------- | Structure: TrainingResults <<<
         struct TrainingResults
         {
+            //====================================================== | Data <<<<
             int epochInterval;
             std::vector<double> costPerEpochInterval;
+        };
+
+        //------------------------------------- | Structure: TrainingResults <<<
+        struct TestingResultsPerExample
+        {
+            //====================================================== | Data <<<<
+            std::vector<Eigen::VectorXd> neurons;
+            Eigen::VectorXd targets;
+            std::vector<Eigen::VectorXd> errors;
+            double cost;
+        };
+
+        struct TestingResults
+        {
+            //====================================================== | Data <<<<
+            double globalCost;
+            std::vector<TestingResultsPerExample> testingResultsPerExample;
         };
 
         //======================================================= | Behaviour <<
@@ -53,6 +71,9 @@ namespace NeuralNetworks
                  double momentumCoefficient = 0.0,
                  bool shuffleTrainingData = true,
                  int epochInterval = 1);
+
+        TestingResults test // TODO: Rename Training to Testing
+                (std::vector<TrainingExample> const &testingExamples) const;
 
         void saveToFile
                 (std::string const &filename) const;
