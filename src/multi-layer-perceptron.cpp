@@ -72,8 +72,8 @@ namespace NeuralNetworks
 
     MultiLayerPerceptron::MultiLayerPerceptron
             (std::string const &filename)
-            :
-            MultiLayerPerceptron({1, 1}, {true, true})
+//            :
+//            MultiLayerPerceptron({1, 1}, {true, true})
     {
         std::ifstream file(filename, std::ios::in | std::ios::binary);
         {
@@ -102,15 +102,20 @@ namespace NeuralNetworks
         return neurons;
     }
 
-    void MultiLayerPerceptron::train
+    MultiLayerPerceptron::TrainingResults MultiLayerPerceptron::train
             (std::vector<TrainingExample> const &trainingExamples,
              int const numberOfEpochs,
              double const costGoal,
              double learningCoefficient,
              double const learningCoefficientChange,
              double const momentumCoefficient,
-             bool const shuffleTrainingData)
+             bool const shuffleTrainingData,
+             int const epochInterval)
     {
+        // Prepare results
+        TrainingResults trainingResults;
+        trainingResults.epochInterval = epochInterval;
+
         // Create container of training examples' iterators
         std::vector<decltype(trainingExamples.cbegin())>
                 trainingExamplesIterators;
@@ -212,6 +217,10 @@ namespace NeuralNetworks
             // Check if goal total error across all
             // training examples was achieved
             costPerEpoch /= trainingExamples.size();
+
+            if (epoch % trainingResults.epochInterval == 0)
+                trainingResults.costPerEpochInterval.emplace_back(costPerEpoch);
+
             if (costPerEpoch < costGoal)
                 break;
 
@@ -219,11 +228,7 @@ namespace NeuralNetworks
             learningCoefficient -= (learningCoefficientChange / numberOfEpochs);
         }
 
-//        double cost = ((errorsSum.array() / trainingExamples.size())
-//                       * (errorsSum.array() / trainingExamples.size())).sum();
-
-//        if (cost < errorGoal)
-//            break;
+        return trainingResults;
     }
 
     void MultiLayerPerceptron::saveToFile

@@ -15,15 +15,20 @@ namespace NeuralNetworks
     class MultiLayerPerceptron final
     {
     public:
+        //====================================================== | Structures <<
+        //------------------------------------- | Structure: TrainingResults <<<
+        struct TrainingResults
+        {
+            int epochInterval;
+            std::vector<double> costPerEpochInterval;
+        };
+
         //======================================================= | Behaviour <<
         //--------------------------------------------------------- | Static <<<
         static void initialiseRandomNumberGenerator
                 (int const &seed);
 
         //--------------------------------------------------- | Constructors <<<
-        MultiLayerPerceptron
-                () = default;
-
         explicit MultiLayerPerceptron
                 (std::vector<int> const &numberOfNeurons,
                  std::vector<bool> const &enableBiasPerLayer);
@@ -39,14 +44,15 @@ namespace NeuralNetworks
         Eigen::VectorXd feedForward
                 (Eigen::VectorXd const &inputs) const;
 
-        /*TrainingResults*/void train
+        TrainingResults train
                 (std::vector<TrainingExample> const &trainingExamples,
                  int numberOfEpochs,
                  double costGoal,
                  double learningCoefficient,
                  double learningCoefficientChange = 0.0,
                  double momentumCoefficient = 0.0,
-                 bool shuffleTrainingData = true);
+                 bool shuffleTrainingData = true,
+                 int epochInterval = 1);
 
         void saveToFile
                 (std::string const &filename) const;
@@ -59,6 +65,10 @@ namespace NeuralNetworks
         std::vector<PerceptronLayer> layers;
 
         //======================================================= | Behaviour <<
+        //--------------------------------------------------- | Constructors <<<
+        MultiLayerPerceptron
+                () = delete;
+
         //-------------------------------------------------- | Serialization <<<
         friend class cereal::access;
 
