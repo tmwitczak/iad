@@ -1,7 +1,7 @@
 #ifndef IAD_2A_TRAINING_EXAMPLE_HPP
 #define IAD_2A_TRAINING_EXAMPLE_HPP
 ///////////////////////////////////////////////////////////////////// | Includes
-#include <Eigen>
+#include <Eigen/Eigen>
 
 //////////////////////////////////////////////////// | Namespace: NeuralNetworks
 namespace NeuralNetworks

@@ -6,7 +6,7 @@
 #include "rectified-linear-unit.hpp"
 #include "training-example.hpp"
 
-#include <Eigen>
+#include <Eigen/Eigen>
 #include <vector>
 #include <memory>
 #include <cereal/access.hpp>

@@ -4,7 +4,7 @@
 #include "perceptron-layer.hpp"
 #include "parametric-rectified-linear-unit.hpp"
 
-#include <Eigen>
+#include <Eigen/Eigen>
 #include <string>
 #include <vector>
 
