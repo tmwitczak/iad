@@ -16,30 +16,10 @@ namespace NeuralNetworks
     {
     public:
         //====================================================== | Structures <<
-        //------------------------------------- | Structure: TrainingResults <<<
-        struct TrainingResults
-        {
-            //====================================================== | Data <<<<
-            int epochInterval;
-            std::vector<double> costPerEpochInterval;
-        };
+        struct TrainingResults;
 
-        //------------------------------------- | Structure: TrainingResults <<<
-        struct TestingResultsPerExample
-        {
-            //====================================================== | Data <<<<
-            std::vector<Eigen::VectorXd> neurons;
-            Eigen::VectorXd targets;
-            std::vector<Eigen::VectorXd> errors;
-            double cost;
-        };
-
-        struct TestingResults
-        {
-            //====================================================== | Data <<<<
-            double globalCost;
-            std::vector<TestingResultsPerExample> testingResultsPerExample;
-        };
+        struct TestingResults;
+        struct TestingResultsPerExample;
 
         //======================================================= | Behaviour <<
         //--------------------------------------------------------- | Static <<<
@@ -113,6 +93,30 @@ namespace NeuralNetworks
                 (std::vector<Eigen::VectorXd> const &inputsPerLayer,
                  Eigen::VectorXd const &errors) const;
 
+    };
+
+    //============================ | Class: MultiLayerPerceptron | Structures <<
+    //----------------------------------------- | Structure: TrainingResults <<<
+    struct MultiLayerPerceptron::TrainingResults
+    {
+        int epochInterval;
+        std::vector<double> costPerEpochInterval;
+    };
+
+    //------------------------------------------ | Structure: TestingResults <<<
+    struct MultiLayerPerceptron::TestingResults
+    {
+        double globalCost;
+        std::vector<TestingResultsPerExample> testingResultsPerExample;
+    };
+
+    //-------------------------------- | Structure: TestingResultsPerExample <<<
+    struct MultiLayerPerceptron::TestingResultsPerExample
+    {
+        std::vector<Eigen::VectorXd> neurons;
+        Eigen::VectorXd targets;
+        std::vector<Eigen::VectorXd> errors;
+        double cost;
     };
 
 }
