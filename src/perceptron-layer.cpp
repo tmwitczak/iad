@@ -175,10 +175,14 @@ namespace NeuralNetworks
 //                                /(gradientOfSingleOutput.size() - 1));
 //            gradientOfSingleOutput = (gradientOfSingleOutput.array()
 //                     - gradientOfSingleOutput.array().mean()) / std_dev;
-            gradientOfSingleOutput.normalize();
+
 //            gradientOfSingleOutput
 //                    /= gradientOfSingleOutput.array().abs().sum();
 
+
+            // TODO: Normalise?
+            gradientOfSingleOutput.normalize();
+            gradientOfSingleOutput *= 1.25;
 
             propagatedError += (gradientOfSingleOutput * errors(i));
         }
