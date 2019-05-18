@@ -153,41 +153,60 @@ namespace NeuralNetworks
 //
 //        return propagatedError;
 
-        Vector propagatedError { Vector::Zero(numberOfInputs()) };
+//        Vector propagatedError { Vector::Zero(numberOfInputs()) };
         Vector outputsDerivative
                 = activationFunction->derivative
                         (weights * inputs + (isBiasEnabled
                                              ? biases
                                              : Vector::Zero(biases.size())));
 
-        for (int i = 0; i < numberOfOutputs(); i++)
-        {
-            Vector gradientOfSingleOutput { numberOfInputs() };
+//        Vector gradient { weights.transpose() * outputsDerivative };
 
-            for (int j = 0; j < numberOfInputs(); j++)
-                gradientOfSingleOutput(j) = outputsDerivative(i)
-                                            * weights(i, j);
+        // 0.0346514
+//        for (int i = 0; i < numberOfOutputs(); i++)
+//        {
+////            Vector gradientOfSingleOutput { numberOfInputs() };
+////            for (int j = 0; j < numberOfInputs(); j++)
+////                gradientOfSingleOutput(j) = outputsDerivative(i)
+////                                            * weights(i, j);
+//
+//            Vector gradientOfSingleOutput { outputsDerivative(i)
+//                                            * weights.row(i) };
+//
+//            // TODO: Normalise?
+//            //gradientOfSingleOutput.normalize();
+////            gradientOfSingleOutput /= gradientOfSingleOutput.array().abs().sum();
+////            gradientOfSingleOutput *= 1.25;
+//
+////            Eigen::ArrayXd test {3};
+////            test << 1, 2, 0;
+////            std::cout << "test:\n" << test.inverse() << "\n";
+//
+////            for (int x = 0; x < gradientOfSingleOutput.size(); x++)
+////                if (gradientOfSingleOutput(x) == 0.0)
+////                    gradientOfSingleOutput(x)
+////                            += std::numeric_limits<double>::min();
+//
+////            gradientOfSingleOutput = gradientOfSingleOutput.array().inverse()
+////                                     / gradientOfSingleOutput.size();
+//
+//            propagatedError += (gradientOfSingleOutput * errors(i));
+//
+////            errors(i) * outputsDerivative(i) * weights.row(i);
+//        }
+
+        Vector propagatedError
+                = weights.transpose()
+                  * Vector { (errors.array() * outputsDerivative.array()) };
 
 
-//            double std_dev
-//                = std::sqrt((gradientOfSingleOutput.array()
-//                        - gradientOfSingleOutput.mean()).square().sum()
-//                                /(gradientOfSingleOutput.size() - 1));
-//            gradientOfSingleOutput = (gradientOfSingleOutput.array()
-//                     - gradientOfSingleOutput.array().mean()) / std_dev;
+//        std::cout << "prop equal:\n" << (prop.norm() / propagatedError.norm())
+//        << "\n";
+//        system("pause");
 
-//            gradientOfSingleOutput
-//                    /= gradientOfSingleOutput.array().abs().sum();
+//        propagatedError = gradient * errors;
 
-
-            // TODO: Normalise?
-            gradientOfSingleOutput.normalize();
-            gradientOfSingleOutput *= 1.25;
-
-            propagatedError += (gradientOfSingleOutput * errors(i));
-        }
-
-        return propagatedError;
+        return /*1.25 **/ propagatedError;
 
     }
 
