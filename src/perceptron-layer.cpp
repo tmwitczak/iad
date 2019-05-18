@@ -196,53 +196,21 @@ namespace NeuralNetworks
              Vector const &errors,
              Vector const &outputs)
     {
-        // TODO: Rewrite algorithm in vector arithmetics.
-        //std::cout << "o: " << errors.size() << std::endl;
-//        for (int i = 0; i < outputs.size(); i++)
-//        {
-//            //std::cout << "i: " << i << std::endl;
-//            for (int j = 0; j < inputs.size(); j++)
-//                weights(i, j) += learningRate * inputs(j) * errors(i)
-//                                 * outputs(i) * (1.0 - outputs(i));
-//
-//            biases(i) += learningRate * errors(i)
-//                         * outputs(i) * (1.0 - outputs(i));
-//        }
-
         Vector outputsDerivative
                 = activationFunction->derivative
                         (weights * inputs + (isBiasEnabled
                                              ? biases
                                              : Vector::Zero(biases.size())));
 
-        for (int i = 0;
-             i < outputs.size();
-             i++)
-        {
-            for (int j = 0;
-                 j < inputs.size();
-                 j++)
-            {
-                double derivative = 0.0;
-                for (int k = 0; k < outputs.size(); k++)
-                    derivative += (-errors(i)
-                                   * outputsDerivative(i));
-                //outputs(i) * (1.0 - outputs(i)));
+        Vector derivative = (-errors.array()
+                             * outputsDerivative.array());
 
-                deltaWeights(i, j) -= (derivative * inputs(j));
+        deltaWeights -= (derivative * Eigen::RowVectorXd(inputs));
 
-                if (isBiasEnabled)
-                    deltaBiases(i) -= (derivative);
-            }
-        }
+        if (isBiasEnabled)
+            deltaBiases -= (derivative);
 
         ++currentNumberOfSteps;
-
-//        for (int j = 0; j < inputs.size(); j++)
-//            std::cout << weights(0, j) << " ";
-//        std::cout << "\n\n";
-//        system("pause");
-
     }
 
     void PerceptronLayer::update
