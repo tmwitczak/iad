@@ -2,12 +2,15 @@ import os
 import shutil
 import subprocess
 
+# //////////////////////////////////////////////////////////////////////////// #
 print('Preparing data sets:')
 
+# ---------------------------------------------------------------------------- #
 print('> Unzipping \'data.zip\'')
 subprocess.call('unzip-data.py',
                 shell=True)
 
+# ---------------------------------------------------------------------------- #
 print('> Converting:')
 print('  - \'iris.csv\'')
 subprocess.call('convert-classification-data.py'
@@ -41,8 +44,12 @@ subprocess.call('convert-classification-data.py'
                 + ' -o ./prepared-data/digits-test.csv',
                 shell=True)
 
+# ---------------------------------------------------------------------------- #
 print('> Deleting \'original-data\'')
 shutil.rmtree('./original-data')
 
+# ---------------------------------------------------------------------------- #
 print('> Renaming \'prepared-data\' to \'data\'')
 os.rename('./prepared-data', './data')
+
+# //////////////////////////////////////////////////////////////////////////// #
