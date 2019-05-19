@@ -73,7 +73,8 @@ std::vector<TrainingExampleClass> readTrainingExamplesFromCsvFile
                 firstLine = false;
                 numberOfInputs = tokens.size() - numberOfClasses;
                 numberOfOutputs = numberOfClasses;
-            } else
+            }
+            else
             {
                 TrainingExample trainingExample;
                 trainingExample.inputs = Vector { numberOfInputs };
@@ -127,7 +128,8 @@ std::vector<TrainingExampleClass> readTrainingExamplesFromCsvFile
 //                            trainingExampleClasses[i].trainingExamples.push_back
 //                                    (trainingExample);
 //                        }
-                } else
+                }
+                else
                 {
                     TrainingExampleClass newClass;
 //                    trainingExample.outputs(
@@ -209,61 +211,107 @@ int main()
              { "Digits",               "./data/digits-test.csv" }};
 
 
-    std::vector<TrainingExampleClass> trainingExampleClasses
-            = readTrainingExamplesFromCsvFile
-                    (dataSetTrainingFilenames[dataSet]);
+    std::cout << endl;
+    std::string mode = askUserForInput("Choose mode",
+                                       {{ 1, "Training" },
+                                        { 2, "Testing" }});
 
-    std::vector<TrainingExampleClass> testingExampleClasses
-            = readTrainingExamplesFromCsvFile
-                    (dataSetTestingFilenames[dataSet]);
+    std::string perceptronFilename;
+    std::cout << "Multi-layer perceptron filename | ";
+    cin.ignore();
+    std::getline(cin, perceptronFilename);
 
-    std::vector<TrainingExample> trainingExamples;
-    for (auto const &trainingExampleClass
-            : trainingExampleClasses)
-        trainingExamples.insert(trainingExamples.end(),
-                                trainingExampleClass.trainingExamples.begin(),
-                                trainingExampleClass.trainingExamples.end());
-
-    std::vector<TrainingExample> testingExamples;
-    for (auto const &testingExampleClass
-            : testingExampleClasses)
-        testingExamples.insert(testingExamples.end(),
-                               testingExampleClass.trainingExamples.begin(),
-                               testingExampleClass.trainingExamples.end());
-
-    MultiLayerPerceptron::initialiseRandomNumberGenerator
-            (static_cast<int>(time(nullptr)));
-    MultiLayerPerceptron multiLayerPerceptron
-            {{ static_cast<int>(trainingExamples.at(0).inputs.size()),
-                     64,
-                     static_cast<int>(trainingExamples.at(0).outputs.size()), },
-             { true, true }};
-
-    MultiLayerPerceptron::TrainingResults trainingResults
-            = multiLayerPerceptron.train(trainingExamples,
-                                         10000,
-                                         0.0001,
-                                         0.2,
-                                         -0.2,
-                                         0.8,
-                                         true,
-                                         1);
-    saveErrorToFile("iad2-cwiczenie-przypadek1-funkcja-kosztu",
-                    trainingResults);
-
-    MultiLayerPerceptron::TestingResults testingResults
-            = multiLayerPerceptron.test(testingExamples);
-
-    int avg = 0;
-    for (auto const &i : testingResults.testingResultsPerExample)
+    if (mode == "Training")
     {
-        Vector::Index classNumber;
-        i.neurons.back().array().maxCoeff(&classNumber);
-        avg += (int) (i.targets(classNumber) == 1.0);
-    }
-    cout << "dokl: " << (double) avg / testingExamples.size() * 100 << " %" <<
-         endl;
+        std::vector<TrainingExampleClass> trainingExampleClasses
+                = readTrainingExamplesFromCsvFile
+                        (dataSetTrainingFilenames[dataSet]);
 
+        std::vector<TrainingExample> trainingExamples;
+        for (auto const &trainingExampleClass
+                : trainingExampleClasses)
+            trainingExamples.insert(trainingExamples.end(),
+                                    trainingExampleClass.trainingExamples.begin(),
+                                    trainingExampleClass.trainingExamples.end());
+
+        MultiLayerPerceptron::initialiseRandomNumberGenerator
+                (static_cast<int>(time(nullptr)));
+        MultiLayerPerceptron multiLayerPerceptron
+                {{ static_cast<int>(trainingExamples.at(0).inputs.size()),
+                         64,
+                         static_cast<int>(trainingExamples.at(
+                                 0).outputs.size()), },
+                 { true, true }};
+
+        int numberOfEpochs;
+        double costGoal;
+        double learningCoefficientStart;
+        double learningCoefficientEnd;
+        double momentumCoefficient;
+        bool shuffleTrainingData;
+        int epochInterval;
+
+        std::cout << "Number of epochs | ";
+        std::cin >> numberOfEpochs;
+        std::cout << "Cost goal | ";
+        std::cin >> costGoal;
+        std::cout << "Learning coefficient (start) | ";
+        std::cin >> learningCoefficientStart;
+        std::cout << "Learning coefficient (end) | ";
+        std::cin >> learningCoefficientEnd;
+        std::cout << "Momentum coefficient | ";
+        std::cin >> momentumCoefficient;
+        std::cout << "Shuffle training data | ";
+        std::cin >> shuffleTrainingData;
+        std::cout << "Epoch interval | ";
+        std::cin >> epochInterval;
+
+        MultiLayerPerceptron::TrainingResults trainingResults
+                = multiLayerPerceptron.train(trainingExamples,
+                                             numberOfEpochs,
+                                             costGoal,
+                                             learningCoefficientStart,
+                                             learningCoefficientEnd
+                                             - learningCoefficientStart,
+                                             momentumCoefficient,
+                                             shuffleTrainingData,
+                                             epochInterval);
+        saveErrorToFile("iad2-cwiczenie-przypadek1-funkcja-kosztu",
+                        trainingResults);
+
+        multiLayerPerceptron.saveToFile(perceptronFilename);
+    }
+    else
+    {
+        std::vector<TrainingExampleClass> testingExampleClasses
+                = readTrainingExamplesFromCsvFile
+                        (dataSetTestingFilenames[dataSet]);
+
+        std::vector<TrainingExample> testingExamples;
+        for (auto const &testingExampleClass
+                : testingExampleClasses)
+            testingExamples.insert(testingExamples.end(),
+                                   testingExampleClass.trainingExamples.begin(),
+                                   testingExampleClass.trainingExamples.end());
+
+        MultiLayerPerceptron multiLayerPerceptron(perceptronFilename);
+
+        MultiLayerPerceptron::TestingResults testingResults
+                = multiLayerPerceptron.test(testingExamples);
+
+        int avg = 0;
+        for (auto const &i : testingResults.testingResultsPerExample)
+        {
+            Vector::Index classNumber;
+            i.neurons.back().array().maxCoeff(&classNumber);
+            avg += (int) (i.targets(classNumber) == 1.0);
+        }
+        cout << "dokl: " << (double) avg / testingExamples.size() * 100 << " %"
+             <<
+             endl;
+    }
+
+    system("pause");
     return 0;
 }
 
