@@ -19,7 +19,7 @@ subprocess.call('convert-classification-data.py'
                 + ' -o ./prepared-data/iris.csv'
                 + ' -n ./prepared-data/iris-normalised.csv'
                 + ' -s ./prepared-data/iris-standardised.csv'
-                + ' -t 0.95',
+                + ' -t 0.75',
                 shell=True)
 
 print('  - \'seeds.csv\'')
@@ -29,7 +29,7 @@ subprocess.call('convert-classification-data.py'
                 + ' -o ./prepared-data/seeds.csv'
                 + ' -n ./prepared-data/seeds-normalised.csv'
                 + ' -s ./prepared-data/seeds-standardised.csv'
-                + ' -t 0.95',
+                + ' -t 0.75',
                 shell=True)
 
 print('  - \'digits-train.csv\'')
