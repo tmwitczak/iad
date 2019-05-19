@@ -91,14 +91,17 @@ def load_data_from_csv_file(
     with open(csv_filename) as csv_file:
         csv_data = csv.reader(csv_file)
         for i, row in enumerate(csv_data):
-            print('Loading data row', ': ', i,
-                  sep='', end='\r\n', flush=True)
+            print('Loading ' + csv_filename + ' | Row: ', i,
+                  sep='', end='\r', flush=True)
             data.append(
                 vector_from_list(
                     [float(x) for x in row[0:class_labels_column_number]]
                     + [float(x) for x in row[(class_labels_column_number
                                               + 1):len(row)]]))
             class_labels.append(row[class_labels_column_number])
+        else:
+            print(' ' * len('Loading ' + csv_filename + ' | Row: ' + str(i)),
+                  sep='', end='\r', flush=True)
 
     # Normalise and standardise data
     if normalised or standardised:
@@ -206,16 +209,16 @@ def main(
             standardise = True
             standardised_file = arg
 
-    print(input_file)
-    print(class_column)
-    print(output_file)
-    if normalise:
-        print(normalised_file)
-    if (standardise):
-        print(standardised_file)
+    # print(input_file)
+    # print(class_column)
+    # print(output_file)
+    # if normalise:
+    #     print(normalised_file)
+    # if (standardise):
+    #     print(standardised_file)
 
     # classification_data: ClassificationData = load_data_from_csv_file(
-    #     '../mnist-digits/mnist-digits-test.csv', 0, normalised=False,
+    #     '../mnist-digits/digits-test.csv', 0, normalised=False,
     #     standardised=False)
     classification_data: ClassificationData \
         = load_data_from_csv_file(input_file,
