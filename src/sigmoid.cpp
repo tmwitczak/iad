@@ -31,17 +31,17 @@ namespace NeuralNetworks
     }
 
     //---------------------------------------------- | cereal: Serialization <<<
-    template <typename Archive>
-    void Sigmoid::save
-            (Archive &archive) const
-    {
-    }
-
-    template <typename Archive>
-    void Sigmoid::load
-            (Archive &archive)
-    {
-    }
+//    template <typename Archive>
+//    void Sigmoid::save
+//            (Archive &archive) const
+//    {
+//    }
+//
+//    template <typename Archive>
+//    void Sigmoid::load
+//            (Archive &archive)
+//    {
+//    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -54,11 +54,15 @@ namespace NeuralNetworks
 
         template <typename Archive>
         void save
-                (Archive &archive) const;
+                (Archive &archive) const
+        {
+        }
 
         template <typename Archive>
         void load
-                (Archive &archive);
+                (Archive &archive)
+        {
+        }
     };
 }
 
