@@ -27,8 +27,8 @@ add_executable(iad-2a
                parametric-rectified-linear-unit.cpp
                parametric-rectified-linear-unit.hpp)
 
-set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_HOME_DIRECTORY})
-message (STATUS ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+set_target_properties(iad-2a PROPERTIES
+                      RUNTIME_OUTPUT_DIRECTORY ${CMAKE_HOME_DIRECTORY})
 
 #target_compile_options(iad-2a -Wall -Wextra -Wpedantic -Werror)
 
