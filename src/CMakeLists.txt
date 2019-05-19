@@ -30,6 +30,8 @@ add_executable(iad-2a
 set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_HOME_DIRECTORY})
 message (STATUS ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 
+#target_compile_options(iad-2a -Wall -Wextra -Wpedantic -Werror)
+
 # Add Eigen3
 find_package(Eigen3 REQUIRED)
 target_link_libraries(iad-2a Eigen3::Eigen)

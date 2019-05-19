@@ -46,58 +46,96 @@ std::vector<std::string_view> split
 }
 
 std::vector<TrainingExampleClass> readTrainingExamplesFromCsvFile
-        (std::string filename, int const numberOfInputs, int const
-        numberOfClasses)
+        (std::string const &filename)
 {
     std::vector<TrainingExampleClass> trainingExampleClasses;
 
     std::ifstream file(filename, std::ios::in);
     {
         std::string line;
+        bool firstLine = true;
+        int numberOfOutputs = 0;
+        int numberOfInputs = 0;
+        std::vector<std::string> classes;
+
         while (std::getline(file, line) && !line.empty())
         {
+            std::cout << ".";
             std::vector<std::string_view> tokens = split(line, ",");
 
-            TrainingExample trainingExample;
-            trainingExample.inputs = Vector { numberOfInputs };
-            for (int i = 0; i < numberOfInputs; i++)
+            if (firstLine)
             {
-                // TODO: Rewrite that monster!
-                double inputNumber;
-                std::stringstream str;
-                str << tokens.at(i);
-                str >> inputNumber;
-                trainingExample.inputs(i) = inputNumber;
-            }
+                int numberOfClasses = 0;
+                for (auto const &i : tokens)
+                    numberOfClasses += (int) (i != " ");
+                classes.assign(tokens.end() - numberOfClasses, tokens.end());
 
-            bool isClassAlreadyIn = false;
-            for (auto const &i : trainingExampleClasses)
-            {
-                if (i.className == tokens.back())
-                {
-                    isClassAlreadyIn = true;
-                    break;
-                }
-            }
-
-            trainingExample.outputs = Vector::Zero(numberOfClasses);
-
-            if (isClassAlreadyIn)
-            {
-                for (int i = 0; i < trainingExampleClasses.size(); i++)
-                    if (trainingExampleClasses[i].className == tokens.back())
-                    {
-                        trainingExample.outputs(i) = 1.0;
-                        trainingExampleClasses[i].trainingExamples.push_back
-                                (trainingExample);
-                    }
+                firstLine = false;
+                numberOfInputs = tokens.size() - numberOfClasses;
+                numberOfOutputs = numberOfClasses;
             } else
             {
-                TrainingExampleClass newClass;
-                trainingExample.outputs(trainingExampleClasses.size()) = 1.0;
-                newClass.className = tokens.back();
-                newClass.trainingExamples.push_back(trainingExample);
-                trainingExampleClasses.push_back(newClass);
+                TrainingExample trainingExample;
+                trainingExample.inputs = Vector { numberOfInputs };
+                trainingExample.outputs = Vector { numberOfOutputs };
+
+                for (int i = 0; i < numberOfInputs; i++)
+                {
+                    // TODO: Rewrite that monster!
+                    double inputNumber;
+                    std::stringstream str;
+                    str << tokens.at(i);
+                    str >> inputNumber;
+                    trainingExample.inputs(i) = inputNumber;
+                }
+
+                for (int i = 0; i < numberOfOutputs; i++)
+                {
+                    // TODO: Rewrite that monster!
+                    double inputNumber;
+                    std::stringstream str;
+                    str << tokens.at(i + numberOfInputs);
+                    str >> inputNumber;
+                    trainingExample.outputs(i) = inputNumber;
+                }
+
+                bool isClassAlreadyIn = false;
+                int classNumber = -1;
+                trainingExample.outputs.array().maxCoeff(&classNumber);
+                for (auto const &i : trainingExampleClasses)
+                {
+                    if (i.className == classes.at(classNumber))
+                    {
+                        isClassAlreadyIn = true;
+                        break;
+                    }
+                }
+
+                if (isClassAlreadyIn)
+                {
+                    for (auto &i : trainingExampleClasses)
+                    {
+//                        trainingExample.outputs.array().maxCoeff(&classNumber);
+                        if (i.className == classes.at(classNumber))
+                            i.trainingExamples.push_back(trainingExample);
+                    }
+//                    for (int i = 0; i < trainingExampleClasses.size(); i++)
+//                        if (trainingExampleClasses[i].className ==
+//                            tokens.back())
+//                        {
+//                            trainingExample.outputs(i) = 1.0;
+//                            trainingExampleClasses[i].trainingExamples.push_back
+//                                    (trainingExample);
+//                        }
+                } else
+                {
+                    TrainingExampleClass newClass;
+//                    trainingExample.outputs(
+//                            trainingExampleClasses.size()) = 1.0;
+                    newClass.className = classes.at(classNumber);
+                    newClass.trainingExamples.push_back(trainingExample);
+                    trainingExampleClasses.push_back(newClass);
+                }
             }
         }
     }
@@ -109,11 +147,10 @@ int main()
 {
 
 
-
     std::vector<TrainingExampleClass> trainingExampleClasses
             = readTrainingExamplesFromCsvFile
-                    ("E:\\Studia\\semestr-4\\IAD\\iad-2a\\src\\data\\iris"
-                     ".data", 4, 3);
+                    ("E:\\Studia\\semestr-4\\IAD\\iad-2a\\src\\data"
+                     "\\iris\\iris-test-standardised.csv");
 
 //    for (auto const &i : trainingExampleClasses)
 //    {
@@ -125,7 +162,7 @@ int main()
 //        }
 //    }
 
-    double ratio = 0.8;
+    double ratio = 1.0;
     std::vector<TrainingExample> trainingExamples;
     std::vector<TrainingExample> testingExamples;
     for (auto const &trainingExampleClass : trainingExampleClasses)
@@ -146,9 +183,11 @@ int main()
             h = 2,
             m = 4;
 
-    MultiLayerPerceptron::initialiseRandomNumberGenerator(static_cast<int>
-                                                          (time(nullptr)));
-    MultiLayerPerceptron mlp {{ 4, 16, 16, 3 },
+    int seed = 0;
+//    int seed = static_cast<int>(time(nullptr));
+    MultiLayerPerceptron::initialiseRandomNumberGenerator(seed);
+    MultiLayerPerceptron mlp {{ (int) trainingExamples[0].inputs.size(), 32, 32,
+                                (int) trainingExamples[0].outputs.size() },
                               std::vector<bool>(3, true) };
 
     std::vector<TrainingExample> trainingData
@@ -171,13 +210,13 @@ int main()
                     }
             };
 
-    int const numberOfEpochs = 500;
-    double const costGoal = 0.01;
-    double const learningCoefficient = 0.01;
-    double const learningCoefficientChange = -0.0075;
+    int const numberOfEpochs = 10'000;//100
+    double const costGoal = 0.00001;
+    double const learningCoefficient = 0.01;//0.1
+    double const learningCoefficientChange = -0.005;//-0.08
     double const momentumCoefficient = 0.75;
-    bool const shuffleTrainingData = true;
-    int const epochInterval = 50;
+    bool const shuffleTrainingData = true;//false
+    int const epochInterval = 100;
 
     MultiLayerPerceptron::TrainingResults trainingResults
             = mlp.train(trainingExamples,
@@ -186,6 +225,13 @@ int main()
                         momentumCoefficient,
                         shuffleTrainingData,
                         epochInterval);
+
+    {
+        std::ofstream file("training-result-error", std::ios::trunc);
+        for (int i = 0; i < trainingResults.costPerEpochInterval.size(); i++)
+            file << i * trainingResults.epochInterval << ","
+                 << trainingResults.costPerEpochInterval.at(i) << std::endl;
+    }
 
     std::cout << "training results" << std::endl;
     std::cout << "epoch interval: " << trainingResults.epochInterval
@@ -227,10 +273,10 @@ int main()
     mlp.saveToFile("multi-layer-perceptron.mlp");
     MultiLayerPerceptron loadedFromFile { "multi-layer-perceptron.mlp" };
 
-    using std::cout;
-    using std::endl;
-    cout << endl;
-    cout << mlp((Vector { n } << 5.0, 3.3, 1.4, 0.2).finished()) << "\n\n";
+//    using std::cout;
+//    using std::endl;
+//    cout << endl;
+//    cout << mlp((Vector { n } << 1.0, 0.0, 0.0, 0.0).finished()) << "\n\n";
 //    cout << loadedFromFile((Vector { n } << 1.0, 0.0, 0.0, 0.0).finished()) <<
 //         "\n\n";
 //    cout << mlp((Vector { n } << 0.0, 1.0, 0.0, 0.0).finished()) << "\n\n";
