@@ -41,17 +41,26 @@ namespace NeuralNetworks
                 (Eigen::VectorXd const &inputs) const;
 
         //------------------------------------------------- | Main behaviour <<<
+        Eigen::VectorXd calculateOutputs
+                (Eigen::VectorXd const &inputs) const;
+
+        Eigen::VectorXd activate
+                (Eigen::VectorXd const &outputs) const;
+
+        Eigen::VectorXd calculateOutputsDerivative
+                (Eigen::VectorXd const &outputs) const;
+
         Eigen::VectorXd feedForward
                 (Eigen::VectorXd const &inputs) const;
 
         Eigen::VectorXd backpropagate
-                (Eigen::VectorXd const &inputs,
+                (Eigen::VectorXd const &outputsDerivative,
                  Eigen::VectorXd const &errors) const;
 
         void calculateNextStep
                 (Eigen::VectorXd const &inputs,
                  Eigen::VectorXd const &errors,
-                 Eigen::VectorXd const &outputs);
+                 Eigen::VectorXd const &outputsDerivative);
 
         void update
                 (double learningCoefficient,

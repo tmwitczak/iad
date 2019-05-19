@@ -130,97 +130,44 @@ namespace NeuralNetworks
     }
 
     //----------------------------------------------------- | Main behaviour <<<
+    Vector PerceptronLayer::calculateOutputs
+            (Vector const &inputs) const
+    {
+        return weights * inputs
+               + (isBiasEnabled ? biases : Vector::Zero(biases.size()));
+    }
+
+    Vector PerceptronLayer::activate
+            (Vector const &outputs) const
+    {
+        return (*activationFunction)(outputs);
+    }
+
+    Vector PerceptronLayer::calculateOutputsDerivative
+            (Vector const &outputs) const
+    {
+        return activationFunction->derivative(outputs);
+    }
+
     Vector PerceptronLayer::feedForward
             (Vector const &inputs) const
     {
-        return (*activationFunction)(weights * inputs
-                                     + (isBiasEnabled
-                                        ? biases
-                                        : Vector::Zero(biases.size())));
+        return activate(calculateOutputs(inputs));
     }
 
     Vector PerceptronLayer::backpropagate
-            (Vector const &inputs,
+            (Vector const &outputsDerivative,
              Vector const &errors) const
     {
-//        Vector propagatedError
-//                { weights.transpose()
-//                  * Vector { outputs.array() * (1.0 - outputs.array()) }};
-////        Vector { activationFunction->derivative(outputs.array())
-////        }};
-//
-//        (propagatedError /= propagatedError.sum()) *= errors.sum();
-//
-//        return propagatedError;
-
-//        Vector propagatedError { Vector::Zero(numberOfInputs()) };
-        Vector outputsDerivative
-                = activationFunction->derivative
-                        (weights * inputs + (isBiasEnabled
-                                             ? biases
-                                             : Vector::Zero(biases.size())));
-
-//        Vector gradient { weights.transpose() * outputsDerivative };
-
-        // 0.0346514
-//        for (int i = 0; i < numberOfOutputs(); i++)
-//        {
-////            Vector gradientOfSingleOutput { numberOfInputs() };
-////            for (int j = 0; j < numberOfInputs(); j++)
-////                gradientOfSingleOutput(j) = outputsDerivative(i)
-////                                            * weights(i, j);
-//
-//            Vector gradientOfSingleOutput { outputsDerivative(i)
-//                                            * weights.row(i) };
-//
-//            // TODO: Normalise?
-//            //gradientOfSingleOutput.normalize();
-////            gradientOfSingleOutput /= gradientOfSingleOutput.array().abs().sum();
-////            gradientOfSingleOutput *= 1.25;
-//
-////            Eigen::ArrayXd test {3};
-////            test << 1, 2, 0;
-////            std::cout << "test:\n" << test.inverse() << "\n";
-//
-////            for (int x = 0; x < gradientOfSingleOutput.size(); x++)
-////                if (gradientOfSingleOutput(x) == 0.0)
-////                    gradientOfSingleOutput(x)
-////                            += std::numeric_limits<double>::min();
-//
-////            gradientOfSingleOutput = gradientOfSingleOutput.array().inverse()
-////                                     / gradientOfSingleOutput.size();
-//
-//            propagatedError += (gradientOfSingleOutput * errors(i));
-//
-////            errors(i) * outputsDerivative(i) * weights.row(i);
-//        }
-
-        Vector propagatedError
-                = weights.transpose()
-                  * Vector { (errors.array() * outputsDerivative.array()) };
-
-
-//        std::cout << "prop equal:\n" << (prop.norm() / propagatedError.norm())
-//        << "\n";
-//        system("pause");
-
-//        propagatedError = gradient * errors;
-
-        return /*1.25 **/ propagatedError;
-
+        return weights.transpose()
+               * (errors.array() * outputsDerivative.array()).matrix();
     }
 
     void PerceptronLayer::calculateNextStep
             (Vector const &inputs,
              Vector const &errors,
-             Vector const &outputs)
+             Vector const &outputsDerivative)
     {
-        Vector outputsDerivative
-                = activationFunction->derivative
-                        (weights * inputs + (isBiasEnabled
-                                             ? biases
-                                             : Vector::Zero(biases.size())));
-
         Vector derivative = (-errors.array()
                              * outputsDerivative.array());
 

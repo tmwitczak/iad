@@ -23,18 +23,18 @@ namespace NeuralNetworks
     namespace HelperFunctions
     {
         template <typename T>
-        T shuffle
-                (T const &container)
+        T &shuffle
+                (T &container)
         {
             static auto randomNumberGenerator
                     = std::default_random_engine { std::random_device {}() };
 
-            T shuffledContainer { container };
-            std::shuffle(std::begin(shuffledContainer),
-                         std::end(shuffledContainer),
+            //T shuffledContainer { container };
+            std::shuffle(std::begin(container),
+                         std::end(container),
                          randomNumberGenerator);
 
-            return shuffledContainer;
+            return container;
         }
 
         template <typename T>
@@ -138,6 +138,9 @@ namespace NeuralNetworks
             layersIterators.emplace_back(layer);
         }
 
+        auto layersIteratorsReversed
+                { HelperFunctions::reverse(layersIterators) };
+
 
         // Train the network
         for (int epoch = 0;
@@ -157,10 +160,17 @@ namespace NeuralNetworks
                 std::vector<Vector> neurons
                         { firstLayerInputs };
 
+                std::vector<Vector> outputsDerivatives;
+
                 for (auto const &layer
                         : layersIterators)
+                {
+                    Vector outputsDry = layer->calculateOutputs(neurons.back());
+                    outputsDerivatives.emplace_back
+                            (layer->calculateOutputsDerivative(outputsDry));
                     neurons.emplace_back
-                            (layer->feedForward(neurons.back()));
+                            (layer->activate(outputsDry));
+                }
 
                 auto const &lastLayerOutputs
                         = neurons.back();
@@ -175,14 +185,14 @@ namespace NeuralNetworks
                         { lastLayerErrors };
 
                 {
-                    auto inputs = neurons.crbegin() + 1;
+                    auto derivatives = outputsDerivatives.crbegin();
                     for (auto const &layer
-                            : HelperFunctions::reverse(layersIterators))
+                            : layersIteratorsReversed)
                     {
                         errors.emplace_back
                                 (layer->backpropagate
-                                        (*inputs, errors.back()));
-                        ++inputs;
+                                        (*derivatives, errors.back()));
+                        ++derivatives;
                     }
                     errors = HelperFunctions::reverse(errors);
                 }
@@ -193,7 +203,7 @@ namespace NeuralNetworks
                 // Calculate steps for weights and biases
                 {
                     auto inputsIterator = neurons.cbegin();
-                    auto outputsIterator = neurons.cbegin() + 1;
+                    auto derivativesIterator = outputsDerivatives.cbegin();
                     auto errorsIterator = errors.cbegin() + 1;
 
                     for (auto &layer
@@ -201,9 +211,9 @@ namespace NeuralNetworks
                     {
                         layer->calculateNextStep(*inputsIterator,
                                                  *errorsIterator,
-                                                 *outputsIterator);
+                                                 *derivativesIterator);
                         ++inputsIterator;
-                        ++outputsIterator;
+                        ++derivativesIterator;
                         ++errorsIterator;
                     }
                 }
@@ -252,6 +262,9 @@ namespace NeuralNetworks
             layersIterators.emplace_back(layer);
         }
 
+        auto layersIteratorsReversed
+                { HelperFunctions::reverse(layersIterators) };
+
         // Test the network
         for (auto const &testingExample
                 : testingExamples)
@@ -262,10 +275,17 @@ namespace NeuralNetworks
             std::vector<Vector> neurons
                     { firstLayerInputs };
 
+            std::vector<Vector> outputsDerivatives;
+
             for (auto const &layer
                     : layersIterators)
+            {
+                Vector outputsDry = layer->calculateOutputs(neurons.back());
+                outputsDerivatives.emplace_back
+                        (layer->calculateOutputsDerivative(outputsDry));
                 neurons.emplace_back
-                        (layer->feedForward(neurons.back()));
+                        (layer->activate(outputsDry));
+            }
 
             auto const &lastLayerOutputs
                     = neurons.back();
@@ -280,14 +300,14 @@ namespace NeuralNetworks
                     { lastLayerErrors };
 
             {
-                auto inputs = neurons.crbegin() + 1;
+                auto derivatives = outputsDerivatives.crbegin();
                 for (auto const &layer
-                        : HelperFunctions::reverse(layersIterators))
+                        : layersIteratorsReversed)
                 {
                     errors.emplace_back
                             (layer->backpropagate
-                                    (*inputs, errors.back()));
-                    ++inputs;
+                                    (*derivatives, errors.back()));
+                    ++derivatives;
                 }
                 errors = HelperFunctions::reverse(errors);
             }
@@ -298,10 +318,10 @@ namespace NeuralNetworks
 
             // Save testing results per example
             testingResults.testingResultsPerExample.push_back
-                    ({neurons,
-                     lastLayerTargets,
-                     errors,
-                     cost});
+                    ({ neurons,
+                       lastLayerTargets,
+                       errors,
+                       cost });
         }
 
         // Average out global error
