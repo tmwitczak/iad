@@ -46,6 +46,20 @@ class ClassificationData(NamedTuple):
 
 
 # /////////////////////////////////////////////////////////////////////////// #
+def print_status_bar(
+        title: str,
+        a: int,
+        b: int,
+        n: int = 10) \
+        -> None:
+    print('\r', title, ': |', '=' * int((a / b) * n),
+          '-' if a != b else '',
+          ' ' * (n - int((a / b) * n) - 1),
+          '| (', a, ' / ', b, ')',
+          sep='', end='', flush=True)
+
+
+# /////////////////////////////////////////////////////////////////////////// #
 def load_data_from_csv_file(
         csv_filename: str,
         class_labels_column_number: int,
@@ -76,7 +90,9 @@ def load_data_from_csv_file(
     # Load data and classes
     with open(csv_filename) as csv_file:
         csv_data = csv.reader(csv_file)
-        for row in csv_data:
+        for i, row in enumerate(csv_data):
+            print('Loading data row', ': ', i,
+                  sep='', end='\r\n', flush=True)
             data.append(
                 vector_from_list(
                     [float(x) for x in row[0:class_labels_column_number]]
@@ -85,24 +101,25 @@ def load_data_from_csv_file(
             class_labels.append(row[class_labels_column_number])
 
     # Normalise and standardise data
-    min_vector: Vector = empty_vector(len(data[0]))
-    max_vector: Vector = empty_vector(len(data[0]))
-    mean_vector: Vector = empty_vector(len(data[0]))
-    stdev_vector: Vector = empty_vector(len(data[0]))
+    if normalised or standardised:
+        min_vector: Vector = empty_vector(len(data[0]))
+        max_vector: Vector = empty_vector(len(data[0]))
+        mean_vector: Vector = empty_vector(len(data[0]))
+        stdev_vector: Vector = empty_vector(len(data[0]))
 
-    for i in range(len(data[0])):
-        min_vector[i] = min(get_column(data, i))
-        max_vector[i] = max(get_column(data, i))
-        mean_vector[i] = statistics.mean(get_column(data, i))
-        stdev_vector[i] = statistics.stdev(get_column(data, i))
+        for i in range(len(data[0])):
+            min_vector[i] = min(get_column(data, i))
+            max_vector[i] = max(get_column(data, i))
+            mean_vector[i] = statistics.mean(get_column(data, i))
+            stdev_vector[i] = statistics.stdev(get_column(data, i))
 
-    for vector in data:
-        if normalised:
-            data_normalised.append(
-                (vector - min_vector) / (max_vector - min_vector))
-        if standardised:
-            data_standardised.append(
-                (vector - mean_vector) / stdev_vector)
+        for vector in data:
+            if normalised:
+                data_normalised.append(
+                    (vector - min_vector) / (max_vector - min_vector))
+            if standardised:
+                data_standardised.append(
+                    (vector - mean_vector) / stdev_vector)
 
     classes = dict.fromkeys(class_labels)
     number_of_outputs: int = len(classes)
@@ -240,7 +257,7 @@ def write_classification_data_to_csv_file(
         csv_data = csv.writer(csv_file)
 
         csv_data.writerow(
-            ['' for _ in range(len(inputs[0]))]
+            [' ' for _ in range(len(inputs[0]))]
             + sorted(dict.fromkeys(class_labels)))
 
         for i in range(len(inputs)):
