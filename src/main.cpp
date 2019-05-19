@@ -175,6 +175,9 @@ void saveErrorToFile
              << trainingResults.costPerEpochInterval.at(i) << std::endl;
 }
 
+#include <string>
+#include <limits>
+
 ////////////////////////////////////////////////////////////// | Project: iad-2a
 int main()
 {
@@ -217,8 +220,9 @@ int main()
                                         { 2, "Testing" }});
 
     std::string perceptronFilename;
+    std::cout << std::endl;
     std::cout << "Multi-layer perceptron filename | ";
-    cin.ignore();
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
     std::getline(cin, perceptronFilename);
 
     if (mode == "Training")
@@ -236,12 +240,24 @@ int main()
 
         MultiLayerPerceptron::initialiseRandomNumberGenerator
                 (static_cast<int>(time(nullptr)));
+
+        std::string hiddenLayerNeuronNumber;
+        std::cout << "Neurons in hidden layers: ";
+        std::getline(std::cin, hiddenLayerNeuronNumber);
+
+        std::vector<int> layersNeurons;
+        layersNeurons.push_back
+                (static_cast<int>(trainingExamples.at(0).inputs.size()));
+
+        for (auto const &neurons : split(hiddenLayerNeuronNumber))
+            layersNeurons.push_back(atoi(neurons.data()));
+
+        layersNeurons.push_back
+                (static_cast<int>(trainingExamples.at(0).outputs.size()));
+
         MultiLayerPerceptron multiLayerPerceptron
-                {{ static_cast<int>(trainingExamples.at(0).inputs.size()),
-                         64,
-                         static_cast<int>(trainingExamples.at(
-                                 0).outputs.size()), },
-                 { true, true }};
+                { layersNeurons,
+                 std::vector<bool>(layersNeurons.size() - 1, true)};
 
         int numberOfEpochs;
         double costGoal;
@@ -276,8 +292,10 @@ int main()
                                              momentumCoefficient,
                                              shuffleTrainingData,
                                              epochInterval);
-        saveErrorToFile("iad2-cwiczenie-przypadek1-funkcja-kosztu",
+
+        saveErrorToFile(perceptronFilename + ".cost",
                         trainingResults);
+        system(("plot-cost-function.py " + perceptronFilename + ".cost").data());
 
         multiLayerPerceptron.saveToFile(perceptronFilename);
     }
