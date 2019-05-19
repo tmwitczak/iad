@@ -1,10 +1,19 @@
 # /////////////////////////////////////////////////////////////////// Imports #
 import csv
+import os
 import statistics
 from enum import Enum
 from typing import Any, List, NamedTuple, Tuple
 
 import numpy
+import random
+
+
+def get_random_shuffled_range(
+        n: int) \
+        -> List[int]:
+    return random.sample(range(n), k=n)
+
 
 # ////////////////////////////////////////////////////////////////// Typedefs #
 Vector = numpy.ndarray
@@ -183,13 +192,15 @@ def main(
     normalised_file: str
     standardise: bool = False
     standardised_file: str
+    training_proportion: float = -1.0
 
     try:
         opts, args = getopt.getopt(argv,
-                                   "i:c:o:n:s:",
+                                   "i:c:o:n:s:t:",
                                    ["input-file=", "class-column=",
                                     'output-file=',
-                                    "normalised-file=", 'standardised-file=', ])
+                                    "normalised-file=", 'standardised-file=',
+                                    "training-proportion="])
 
     except getopt.GetoptError:
         print('blad')  # TODO: Write better error message!
@@ -208,6 +219,8 @@ def main(
         elif opt in ('-s', '--standardise'):
             standardise = True
             standardised_file = arg
+        elif opt in ('-t', '--training-proportion'):
+            training_proportion = float(arg)
 
     # print(input_file)
     # print(class_column)
@@ -226,27 +239,123 @@ def main(
                                   normalised=normalise,
                                   standardised=standardise)
 
-    write_classification_data_to_csv_file(
-        classification_data.inputs,
-        classification_data.outputs,
-        classification_data.class_labels,
-        output_file)
-
-    if normalise:
+    if training_proportion == -1.0:
         write_classification_data_to_csv_file(
-            classification_data.inputs_normalised,
+            classification_data.inputs,
             classification_data.outputs,
             classification_data.class_labels,
-            normalised_file)
+            output_file)
 
-    if standardise:
-        write_classification_data_to_csv_file(
-            classification_data.inputs_standardised,
-            classification_data.outputs,
-            classification_data.class_labels,
-            standardised_file)
+        if normalise:
+            write_classification_data_to_csv_file(
+                classification_data.inputs_normalised,
+                classification_data.outputs,
+                classification_data.class_labels,
+                normalised_file)
+
+        if standardise:
+            write_classification_data_to_csv_file(
+                classification_data.inputs_standardised,
+                classification_data.outputs,
+                classification_data.class_labels,
+                standardised_file)
+
+    else:
+        # Calculate how many training examples there are per class
+        number_of_training_examples_per_class = {}
+        for class_label in sorted(
+                dict.fromkeys(classification_data.class_labels)):
+            number_of_training_examples_per_class[class_label] \
+                = int(classification_data.class_labels.count(class_label)
+                      * training_proportion)
+
+        # Shuffle the data
+        shuffled_indices = get_random_shuffled_range(
+            len(classification_data.class_labels))
+
+        # Divide data into classes
+        class_labels = sorted(dict.fromkeys(classification_data.class_labels))
+        indices_per_class = {}
+        for class_label in class_labels:
+            indices_per_class[class_label] = []
+        for i in shuffled_indices:
+            indices_per_class[classification_data.class_labels[i]].append(i)
+
+        # Divide data into training and testing sets
+        training_per_class = {}
+        testing_per_class = {}
+        for class_label in class_labels:
+            training_per_class[class_label] \
+                = indices_per_class[class_label][
+                  0:number_of_training_examples_per_class[class_label]]
+            testing_per_class[class_label] \
+                = indices_per_class[class_label][
+                  number_of_training_examples_per_class[class_label]:]
+
+        training_indices = []
+        testing_indices = []
+        for class_label in class_labels:
+            training_indices.extend(training_per_class[class_label])
+            testing_indices.extend(testing_per_class[class_label])
+
+        # Save to file
+        write_to_file(training_indices, testing_indices,
+                      classification_data.inputs,
+                      classification_data.outputs,
+                      classification_data.class_labels,
+                      output_file)
+
+        if normalise:
+            write_to_file(training_indices, testing_indices,
+                          classification_data.inputs_normalised,
+                          classification_data.outputs,
+                          classification_data.class_labels,
+                          normalised_file)
+
+        if standardise:
+            write_to_file(training_indices, testing_indices,
+                          classification_data.inputs_standardised,
+                          classification_data.outputs,
+                          classification_data.class_labels,
+                          standardised_file)
 
     #######################
+
+
+def write_to_file(training_indices, testing_indices,
+                  inputs, outputs, class_labels,
+                  output_file):
+    training_inputs = []
+    training_outputs = []
+    training_class_labels = []
+    for i in training_indices:
+        training_inputs.append(inputs[i])
+        training_outputs.append(outputs[i])
+        training_class_labels.append(class_labels[i])
+
+    testing_inputs = []
+    testing_outputs = []
+    testing_class_labels = []
+    for i in testing_indices:
+        testing_inputs.append(inputs[i])
+        testing_outputs.append(outputs[i])
+        testing_class_labels.append(class_labels[i])
+
+    write_classification_data_to_csv_file(
+        training_inputs,
+        training_outputs,
+        training_class_labels,
+        os.path.splitext(output_file)[0]
+        + '-train'
+        + os.path.splitext(output_file)[1])
+
+    write_classification_data_to_csv_file(
+        testing_inputs,
+        testing_outputs,
+        testing_class_labels,
+        os.path.splitext(output_file)[0]
+        + '-test'
+        + os.path.splitext(output_file)[1])
 
 
 def write_classification_data_to_csv_file(

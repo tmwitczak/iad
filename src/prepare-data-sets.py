@@ -12,13 +12,14 @@ subprocess.call('unzip-data.py',
 
 # ---------------------------------------------------------------------------- #
 print('> Converting:')
-print('  - \'iris.csv\'')
+print('  - \'iris.csv\' (\'iris-train.csv\', \'iris-test.csv\')')
 subprocess.call('convert-classification-data.py'
                 + ' -i ./original-data/iris.csv'
                 + ' -c 4'
                 + ' -o ./prepared-data/iris.csv'
                 + ' -n ./prepared-data/iris-normalised.csv'
-                + ' -s ./prepared-data/iris-standardised.csv',
+                + ' -s ./prepared-data/iris-standardised.csv'
+                + ' -t 0.95',
                 shell=True)
 
 print('  - \'seeds.csv\'')
@@ -27,7 +28,8 @@ subprocess.call('convert-classification-data.py'
                 + ' -c 7'
                 + ' -o ./prepared-data/seeds.csv'
                 + ' -n ./prepared-data/seeds-normalised.csv'
-                + ' -s ./prepared-data/seeds-standardised.csv',
+                + ' -s ./prepared-data/seeds-standardised.csv'
+                + ' -t 0.95',
                 shell=True)
 
 print('  - \'digits-train.csv\'')
