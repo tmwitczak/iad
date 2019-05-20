@@ -30,8 +30,8 @@ namespace NeuralNetworks
         explicit PerceptronLayer
                 (int numberOfInputs,
                  int numberOfOutputs,
-                 ActivationFunction const &activationFunction = Sigmoid {},
-                 bool enableBias = true);
+                 ActivationFunction const &activationFunction,
+                 bool enableBias);
 
         explicit PerceptronLayer
                 (std::string const &filename);

@@ -86,7 +86,7 @@ namespace NeuralNetworks
     PerceptronLayer::PerceptronLayer
             ()
             :
-            PerceptronLayer(1, 1)
+            PerceptronLayer(1, 1, Sigmoid {}, true)
     {
     }
 

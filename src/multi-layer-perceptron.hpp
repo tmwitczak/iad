@@ -44,6 +44,7 @@ namespace NeuralNetworks
 
         TrainingResults train
                 (std::vector<TrainingExample> const &trainingExamples,
+                 std::vector<TrainingExample> const &testingExamples,
                  int numberOfEpochs,
                  double costGoal,
                  double learningCoefficient,
@@ -101,6 +102,8 @@ namespace NeuralNetworks
     {
         int epochInterval;
         std::vector<double> costPerEpochInterval;
+        std::vector<double> accuracyTraining;
+        std::vector<double> accuracyTesting;
     };
 
     //------------------------------------------ | Structure: TestingResults <<<

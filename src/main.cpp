@@ -2,6 +2,7 @@
 #include "multi-layer-perceptron.hpp"
 #include "training-example.hpp"
 #include <iostream>
+#include <algorithm>
 #include <ctime>
 #include <sstream>
 #include <string_view>
@@ -178,6 +179,292 @@ void saveErrorToFile
              << trainingResults.costPerEpochInterval.at(i) << std::endl;
 }
 
+void saveTrainingAccuracyToFile
+        (std::string const &filename,
+         MultiLayerPerceptron::TrainingResults const &trainingResults)
+{
+    std::ofstream file(filename, std::ios::trunc);
+    for (int i = 0; i < trainingResults.costPerEpochInterval.size(); i++)
+        file << i * trainingResults.epochInterval << ","
+             << trainingResults.accuracyTraining.at(i) << std::endl;
+}
+
+void saveTestingAccuracyToFile
+        (std::string const &filename,
+         MultiLayerPerceptron::TrainingResults const &trainingResults)
+{
+    std::ofstream file(filename, std::ios::trunc);
+    for (int i = 0; i < trainingResults.costPerEpochInterval.size(); i++)
+        file << i * trainingResults.epochInterval << ","
+             << trainingResults.accuracyTesting.at(i) << std::endl;
+}
+
+std::string braces
+        (std::string const &str)
+{
+    return "[" + str + "]";
+}
+
+void printTestingResults(MultiLayerPerceptron const &multiLayerPerceptron,
+                         std::vector<TrainingExample> const &testingExamples,
+                         std::vector<TrainingExampleClass> const &
+                         testingExampleClasses,
+                         std::string const &testFilename,
+                         std::string const &perceptronFilename)
+{
+    MultiLayerPerceptron::TestingResults testingResults
+            = multiLayerPerceptron.test(testingExamples);
+
+    // Accuracy
+    int globalNumberOfAccurateClassifications = 0;
+    std::vector<int> accurateClassificationsPerClass
+            (testingExampleClasses.size(), 0);
+    std::vector<int> classCount
+            (testingExampleClasses.size(), 0);
+
+    Eigen::MatrixXd confusionMatrix = Eigen::MatrixXd::Zero
+            (testingExampleClasses.size(),
+             testingExampleClasses.size());
+    std::vector<Eigen::MatrixXd> confusionPerClass
+            (testingExampleClasses.size(), Eigen::MatrixXd::Zero(2, 2));
+
+    for (auto const &testingResultsPerExample
+            : testingResults.testingResultsPerExample)
+    {
+        Vector::Index predictedClass, actualClass;
+        testingResultsPerExample.neurons
+                .back().array().maxCoeff(&predictedClass);
+        testingResultsPerExample.targets.array().maxCoeff(&actualClass);
+
+        confusionMatrix(predictedClass, actualClass)++;
+
+        for (int i = 0; i < confusionPerClass.size(); i++)
+        {
+// True positive
+            if (actualClass == i && predictedClass == i)
+                confusionPerClass.at(i)(0, 0)++;
+// True negative
+            else if (actualClass != i && predictedClass != i)
+                confusionPerClass.at(i)(1, 1)++;
+// False positive (type I error)
+            else if (actualClass != i && predictedClass == i)
+                confusionPerClass.at(i)(0, 1)++;
+// False negative (type II error)
+            else if (actualClass == i && predictedClass != i)
+                confusionPerClass.at(i)(1, 0)++;
+        }
+
+        globalNumberOfAccurateClassifications
+                += (int) (predictedClass == actualClass);
+        accurateClassificationsPerClass.at((int) actualClass)
+                += (int) (predictedClass == actualClass);
+        classCount.at((int) actualClass)++;
+    }
+    double globalAccuracy = (double) globalNumberOfAccurateClassifications
+                            / testingExamples.size();
+
+    std::cout << "\n\n>> " << testFilename << std::endl;
+
+    std::cout << "\n > Global confusion matrix: " << std::endl;
+    for (int i = 0; i < confusionMatrix.rows(); i++)
+    {
+        if (i == 0)
+        {
+            std::cout << setw(20) << " ";
+            for (auto const &testingExampleClass
+                    : testingExampleClasses)
+                std::cout
+                        << setw(braces(testingExampleClass.className)
+                                        .length() + 5)
+                        << braces(testingExampleClass.className) << " ";
+            std::cout << std::endl;
+        }
+        std::cout << setw(20)
+                  << braces(testingExampleClasses.at(i).className);
+
+        for (int j = 0; j < confusionMatrix.cols(); j++)
+        {
+            std::cout
+                    << setw(braces(testingExampleClasses.at(j).className)
+                                    .length() + 5) << confusionMatrix(i, j)
+                    << " ";
+        }
+
+//            std::cout << " | "
+//                      << confusionMatrix(i, i) / confusionMatrix.row(i).sum() *
+//                         100;
+        std::cout << std::endl;
+    }
+//        std::cout << setw(20) << " ";
+//        for (int i = 0; i < confusionMatrix.cols(); i++)
+//            std::cout
+//                    << setw(testingExampleClasses.at(i).className.length() + 5)
+//                    << confusionMatrix(i, i) / confusionMatrix.col(i).sum()
+//                       * 100 << " ";
+
+    std::cout << "\n\n" << setw(IOMANIP_WIDTH) << "Total population | "
+              << testingExamples.size()
+              << "\n"
+              << "\n" << setw(IOMANIP_WIDTH) << "Accuracy | "
+              << globalAccuracy * 100 << " %" << std::endl;
+
+//        for (int i = 0; i < testingExampleClasses.size(); i++)
+//            std::cout << "  -- " << testingExampleCla7sses.at(i).className
+//                      << " | " << (double) accurateClassificationsPerClass.at(i)
+//                                  / classCount.at(i) * 100 << " %" << std::endl;
+
+// Confusion matrices per class
+    for (int k = 0; k < confusionPerClass.size(); k++)
+    {
+        std::cout << "\n\n\n";
+        std::cout << "> " << braces(testingExampleClasses.at(k)
+                                            .className) << std::endl;
+
+        for (int i = 0; i < confusionPerClass.at(k).rows(); i++)
+        {
+            if (i == 0)
+            {
+                std::cout << setw(20) << " "
+                          << setw(8 + 5) << "[Positive]" << " "
+                          << setw(8 + 5) << "[Negative]"
+                          << std::endl;
+            }
+            std::cout << setw(20) << (i == 0 ? "[Positive]" : "[Negative]");
+
+            for (int j = 0; j < confusionPerClass.at(k).cols(); j++)
+                std::cout
+                        << setw(8 + 5) << confusionPerClass.at(k)(i, j)
+                        << " ";
+
+//                std::cout << " | "
+//                          << confusionPerClass.at(k)(i, i) /
+//                             confusionPerClass.at(k).row(i).sum() *
+//                             100;
+            std::cout << std::endl;
+        }
+//            std::cout << setw(20) << " ";
+//            for (int i = 0; i < confusionPerClass.at(k).cols(); i++)
+//                std::cout
+//                        << setw(8 + 5)
+//                        << confusionPerClass.at(k)(i, i) /
+//                           confusionPerClass.at(k).col(i).sum()
+//                           * 100 << " ";
+        std::cout << std::endl;
+
+// Statistics
+        int const totalPopulation = confusionPerClass.at(k).sum();
+
+        int const &truePositive = confusionPerClass.at(k)(0, 0);
+        int const &trueNegative = confusionPerClass.at(k)(1, 1);
+        int const &falsePositive = confusionPerClass.at(k)(0, 1);
+        int const &falseNegative = confusionPerClass.at(k)(1, 0);
+
+        int const predictedPositive = truePositive + falsePositive;
+        int const predictedNegative = falseNegative + trueNegative;
+        int const actualPositive = truePositive + falseNegative;
+        int const actualNegative = falsePositive + trueNegative;
+
+        double const positivePredictiveValue
+                = double(truePositive) / predictedPositive;
+        double const falseDiscoveryRate
+                = double(falsePositive) / predictedPositive;
+        double const falseOmissionRate
+                = double(falseNegative) / predictedNegative;
+        double const negativePredictiveValue
+                = double(trueNegative) / predictedNegative;
+
+        double const truePositiveRate
+                = double(truePositive) / actualPositive;
+        double const falsePositiveRate
+                = double(falsePositive) / actualPositive;
+        double const falseNegativeRate
+                = double(falseNegative) / actualNegative;
+        double const trueNegativeRate
+                = double(trueNegative) / actualNegative;
+
+        double const accuracy
+                = double(truePositive + trueNegative) / totalPopulation;
+
+        std::cout << "\n" << setw(IOMANIP_WIDTH) << "Total population | " <<
+                  totalPopulation
+                  << "\n"
+                  << "\n" << setw(IOMANIP_WIDTH) << "True positive | "
+                  << truePositive
+                  << "\n" << setw(IOMANIP_WIDTH) << "True negative | "
+                  << trueNegative
+                  << "\n" << setw(IOMANIP_WIDTH)
+                  << "False positive (type I error) | " << falsePositive
+                  << "\n" << setw(IOMANIP_WIDTH)
+                  << "False negative (type II error) | " << falseNegative
+                  << "\n"
+                  << "\n" << setw(IOMANIP_WIDTH) << "Predicted positive | "
+                  << predictedPositive
+                  << "\n" << setw(IOMANIP_WIDTH) << "Predicted negative | "
+                  << predictedNegative
+                  << "\n" << setw(IOMANIP_WIDTH) << "Actual positive | "
+                  << actualPositive
+                  << "\n" << setw(IOMANIP_WIDTH) << "Actual negative | "
+                  << actualNegative
+                  << "\n"
+                  << "\n" << setw(IOMANIP_WIDTH)
+                  << "Positive predictive value | "
+                  << positivePredictiveValue * 100 << " %"
+                  << "\n" << setw(IOMANIP_WIDTH)
+                  << "False discovery rate | "
+                  << falseDiscoveryRate * 100 << " %"
+                  << "\n" << setw(IOMANIP_WIDTH) << "False omission rate | "
+                  << falseOmissionRate * 100 << " %"
+                  << "\n" << setw(IOMANIP_WIDTH)
+                  << "Negative prediction value | "
+                  << negativePredictiveValue * 100 << " %"
+                  << "\n"
+                  << "\n" << setw(IOMANIP_WIDTH) << "True positive rate | "
+                  << truePositiveRate * 100 << " %"
+                  << "\n" << setw(IOMANIP_WIDTH) << "False positive rate | "
+                  << falsePositiveRate * 100 << " %"
+                  << "\n" << setw(IOMANIP_WIDTH) << "False negative rate | "
+                  << falseNegativeRate * 100 << " %"
+                  << "\n" << setw(IOMANIP_WIDTH) << "True negative rate | "
+                  << trueNegativeRate * 100 << " %"
+                  << "\n"
+                  << "\n" << setw(IOMANIP_WIDTH) << "Accuracy | "
+                  << accuracy * 100 << " %"
+                  << std::endl;
+    }
+
+    // Additional info to file
+    {
+        std::string dirName = "testing-results_" + perceptronFilename;
+        system(("rmdir \"" + dirName + "\" /s /q").data());
+        system(("mkdir \"" + dirName + "\"").data());
+        std::ofstream file(dirName + "/" + perceptronFilename
+                           + ".information", std::ios::trunc);
+
+        file << "> [Global cost]: " << testingResults.globalCost << std::endl;
+        for (auto const &i : testingResults.testingResultsPerExample)
+        {
+            file << "\n\n\n>>>>>>>>>>>>>>>>>>>>>>" << std::endl;
+
+            file << "> [Neurons]\n";
+            for (auto const &j : i.neurons)
+                file << "\n"
+                     << j << std::endl;
+
+            file << "\n> [Targets]\n";
+            file << "\n"
+                 << i.targets << std::endl;
+
+            file << "\n> [Errors]\n";
+            for (auto j = i.errors.crbegin(); j != i.errors.crend(); ++j)
+                file << "\n"
+                     << *j << std::endl;
+
+            file << "\n> [Cost]\n";
+            file << "\n"
+                 << i.cost << std::endl;
+        }
+    }
+}
 
 ////////////////////////////////////////////////////////////// | Project: iad-2a
 int main()
@@ -227,24 +514,38 @@ int main()
     std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
     std::getline(cin, perceptronFilename);
 
+    // Load training and testing examples from file
+    std::vector<TrainingExampleClass> trainingExampleClasses
+            = readTrainingExamplesFromCsvFile
+                    (dataSetTrainingFilenames[dataSet]);
+
+    std::vector<TrainingExample> trainingExamples;
+    for (auto const &trainingExampleClass
+            : trainingExampleClasses)
+        trainingExamples.insert(trainingExamples.end(),
+                                trainingExampleClass.trainingExamples.begin(),
+                                trainingExampleClass.trainingExamples.end());
+
+    std::vector<TrainingExampleClass> testingExampleClasses
+            = readTrainingExamplesFromCsvFile
+                    (dataSetTestingFilenames[dataSet]);
+
+    std::vector<TrainingExample> testingExamples;
+    for (auto const &testingExampleClass
+            : testingExampleClasses)
+        testingExamples.insert(testingExamples.end(),
+                               testingExampleClass.trainingExamples.begin(),
+                               testingExampleClass.trainingExamples.end());
+
+
+    // Do the math
     if (mode == "Training")
     {
-        // Load training examples from file
-        std::vector<TrainingExampleClass> trainingExampleClasses
-                = readTrainingExamplesFromCsvFile
-                        (dataSetTrainingFilenames[dataSet]);
-
-        std::vector<TrainingExample> trainingExamples;
-        for (auto const &trainingExampleClass
-                : trainingExampleClasses)
-            trainingExamples.insert(trainingExamples.end(),
-                                    trainingExampleClass.trainingExamples.begin(),
-                                    trainingExampleClass.trainingExamples.end());
-
         // Prepare perceptron
         MultiLayerPerceptron::initialiseRandomNumberGenerator
                 (static_cast<int>(time(nullptr)));
 
+        // Neuron number
         std::string hiddenLayerNeuronNumber;
         std::cout << setw(IOMANIP_WIDTH) << "Neurons in hidden layers" << " | ";
         std::getline(std::cin, hiddenLayerNeuronNumber);
@@ -259,9 +560,22 @@ int main()
         layersNeurons.push_back
                 (static_cast<int>(trainingExamples.at(0).outputs.size()));
 
+        // Biases
+        std::string biases;
+        std::cout << setw(IOMANIP_WIDTH) << "Enable biases per layer" << " | ";
+        std::getline(std::cin, biases);
+
+        std::vector<bool> biasesPerLayer;
+
+        for (auto const &bias : split(biases))
+            biasesPerLayer.push_back((bool)atoi(bias.data()));
+
+        if (biasesPerLayer.empty())
+            biasesPerLayer = std::vector<bool>(layersNeurons.size() - 1, true);
+
         MultiLayerPerceptron multiLayerPerceptron
                 { layersNeurons,
-                  std::vector<bool>(layersNeurons.size() - 1, true) };
+                  biasesPerLayer };
 
         // Get parameters
         int numberOfEpochs;
@@ -292,6 +606,7 @@ int main()
         // Train
         MultiLayerPerceptron::TrainingResults trainingResults
                 = multiLayerPerceptron.train(trainingExamples,
+                                             testingExamples,
                                              numberOfEpochs,
                                              costGoal,
                                              learningCoefficientStart,
@@ -302,247 +617,54 @@ int main()
                                              epochInterval);
 
         // Document learning
+        multiLayerPerceptron.saveToFile(perceptronFilename);
+
         std::string dirName = "training-results_" + perceptronFilename;
-        std::string plotName = dirName + "/" + perceptronFilename + ".cost";
+        std::string plotErrorName = dirName + "/"
+                                    + perceptronFilename + ".cost";
+        std::string plotTrainingAccuracyName = dirName + "/"
+                                               + perceptronFilename +
+                                               ".training-accuracy";
+        std::string plotTestingAccuracyName = dirName + "/"
+                                              + perceptronFilename
+                                              + ".testing-accuracy";
         system(("rmdir \"" + dirName + "\" /s /q").data());
         system(("mkdir \"" + dirName + "\"").data());
-        saveErrorToFile(plotName, trainingResults);
-        system(("plot-cost-function.py " + plotName).data());
-
-        multiLayerPerceptron.saveToFile(perceptronFilename);
+        saveErrorToFile(plotErrorName, trainingResults);
+        saveTrainingAccuracyToFile(plotTrainingAccuracyName, trainingResults);
+        saveTestingAccuracyToFile(plotTestingAccuracyName, trainingResults);
+        {
+            std::ofstream file(dirName + "/" + perceptronFilename
+                               + ".parameters", std::ios::trunc);
+            file << "Number of epochs: " << numberOfEpochs
+                 << "\nCost goal: " << costGoal
+                 << "\nLearning coefficient (start): "
+                 << learningCoefficientStart
+                 << "\nLearning coefficient (end): " << learningCoefficientEnd
+                 << "\nMomentum coefficient: " << momentumCoefficient
+                 << "\nShuffle training data: " << bool(shuffleTrainingData)
+                 << "\nEpoch interval: " << epochInterval;
+        }
+        system(("plot-cost-function.py " + plotErrorName).data());
+        system(("plot-training-accuracy.py " +
+                plotTrainingAccuracyName).data());
+        system(("plot-testing-accuracy.py " + plotTestingAccuracyName).data());
     }
     else
     {
-        std::vector<TrainingExampleClass> testingExampleClasses
-                = readTrainingExamplesFromCsvFile
-                        (dataSetTestingFilenames[dataSet]);
-
-        std::vector<TrainingExample> testingExamples;
-        for (auto const &testingExampleClass
-                : testingExampleClasses)
-            testingExamples.insert(testingExamples.end(),
-                                   testingExampleClass.trainingExamples.begin(),
-                                   testingExampleClass.trainingExamples.end());
-
         MultiLayerPerceptron multiLayerPerceptron(perceptronFilename);
 
-        MultiLayerPerceptron::TestingResults testingResults
-                = multiLayerPerceptron.test(testingExamples);
-
-        // Accuracy
-        int globalNumberOfAccurateClassifications = 0;
-        std::vector<int> accurateClassificationsPerClass
-                (testingExampleClasses.size(), 0);
-        std::vector<int> classCount
-                (testingExampleClasses.size(), 0);
-
-        Eigen::MatrixXd confusionMatrix = Eigen::MatrixXd::Zero
-                (testingExampleClasses.size(),
-                 testingExampleClasses.size());
-        std::vector<Eigen::MatrixXd> confusionPerClass
-                (testingExampleClasses.size(), Eigen::MatrixXd::Zero(2, 2));
-
-        for (auto const &testingResultsPerExample
-                : testingResults.testingResultsPerExample)
-        {
-            Vector::Index predictedClass, actualClass;
-            testingResultsPerExample.neurons
-                    .back().array().maxCoeff(&predictedClass);
-            testingResultsPerExample.targets.array().maxCoeff(&actualClass);
-
-            confusionMatrix(predictedClass, actualClass)++;
-
-            for (int i = 0; i < confusionPerClass.size(); i++)
-            {
-                // True positive
-                if (actualClass == i && predictedClass == i)
-                    confusionPerClass.at(i)(0, 0)++;
-                    // True negative
-                else if (actualClass != i && predictedClass != i)
-                    confusionPerClass.at(i)(1, 1)++;
-                    // False positive (type I error)
-                else if (actualClass != i && predictedClass == i)
-                    confusionPerClass.at(i)(0, 1)++;
-                    // False negative (type II error)
-                else if (actualClass == i && predictedClass != i)
-                    confusionPerClass.at(i)(1, 0)++;
-            }
-
-            globalNumberOfAccurateClassifications
-                    += (int) (predictedClass == actualClass);
-            accurateClassificationsPerClass.at((int) actualClass)
-                    += (int) (predictedClass == actualClass);
-            classCount.at((int) actualClass)++;
-        }
-        double globalAccuracy = (double) globalNumberOfAccurateClassifications
-                                / testingExamples.size();
-
-        std::cout << "Confusion matrix: " << std::endl;
-        for (int i = 0; i < confusionMatrix.rows(); i++)
-        {
-            if (i == 0)
-            {
-                std::cout << setw(20) << " " << "   ";
-                for (auto const &testingExampleClass
-                        : testingExampleClasses)
-                    std::cout
-                            << setw(testingExampleClass.className
-                                            .length() + 5)
-                            << testingExampleClass.className << " ";
-                std::cout << std::endl;
-            }
-            std::cout << setw(20) << testingExampleClasses.at(i).className
-                      << " | ";
-
-            for (int j = 0; j < confusionMatrix.cols(); j++)
-            {
-                std::cout
-                        << setw(testingExampleClasses.at(j).className.length()
-                                + 5) << confusionMatrix(i, j) << " ";
-            }
-
-            std::cout << " | "
-                      << confusionMatrix(i, i) / confusionMatrix.row(i).sum() *
-                         100;
-            std::cout << std::endl;
-        }
-        std::cout << setw(20) << " " << "   ";
-        for (int i = 0; i < confusionMatrix.cols(); i++)
-            std::cout
-                    << setw(testingExampleClasses.at(i).className.length() + 5)
-                    << confusionMatrix(i, i) / confusionMatrix.col(i).sum()
-                       * 100 << " ";
-
-        std::cout << std::endl << std::string(40, '-') << std::endl;
-        std::cout << "> " << dataSetTestingFilenames[dataSet] << std::endl;
-        std::cout << "  - Global accuracy | " << globalAccuracy * 100
-                  << " %" << std::endl;
-
-        for (int i = 0; i < testingExampleClasses.size(); i++)
-            std::cout << "  -- " << testingExampleClasses.at(i).className
-                      << " | " << (double) accurateClassificationsPerClass.at(i)
-                                  / classCount.at(i) * 100 << " %" << std::endl;
-
-        // Confusion matrices per class
-        for (int k = 0; k < confusionPerClass.size(); k++)
-        {
-            std::cout << std::endl;
-            std::cout << "> [" << testingExampleClasses.at(k).className << "]"
-                      << std::endl;
-
-            for (int i = 0; i < confusionPerClass.at(k).rows(); i++)
-            {
-                if (i == 0)
-                {
-                    std::cout << setw(20) << " " << "   "
-                              << setw(8 + 5) << "Positive" << " "
-                              << setw(8 + 5) << "Negative"
-                              << std::endl;
-                }
-                std::cout << setw(20) << (i == 0 ? "Positive" : "Negative")
-                          << " | ";
-
-                for (int j = 0; j < confusionPerClass.at(k).cols(); j++)
-                    std::cout
-                            << setw(8 + 5) << confusionPerClass.at(k)(i, j)
-                            << " ";
-
-                std::cout << " | "
-                          << confusionPerClass.at(k)(i, i) /
-                             confusionPerClass.at(k).row(i).sum() *
-                             100;
-                std::cout << std::endl;
-            }
-            std::cout << setw(20) << " " << "   ";
-            for (int i = 0; i < confusionPerClass.at(k).cols(); i++)
-                std::cout
-                        << setw(8 + 5)
-                        << confusionPerClass.at(k)(i, i) /
-                           confusionPerClass.at(k).col(i).sum()
-                           * 100 << " ";
-            std::cout << std::endl;
-
-            // Statistics
-            int const totalPopulation = confusionPerClass.at(k).sum();
-
-            int const &truePositive = confusionPerClass.at(k)(0, 0);
-            int const &trueNegative = confusionPerClass.at(k)(1, 1);
-            int const &falsePositive = confusionPerClass.at(k)(0, 1);
-            int const &falseNegative = confusionPerClass.at(k)(1, 0);
-
-            int const predictedPositive = truePositive + falsePositive;
-            int const predictedNegative = falseNegative + trueNegative;
-            int const actualPositive = truePositive + falseNegative;
-            int const actualNegative = falsePositive + trueNegative;
-
-            double const positivePredictiveValue
-                    = double(truePositive) / predictedPositive;
-            double const falseDiscoveryRate
-                    = double(falsePositive) / predictedPositive;
-            double const falseOmissionRate
-                    = double(falseNegative) / predictedNegative;
-            double const negativePredictiveValue
-                    = double(trueNegative) / predictedNegative;
-
-            double const truePositiveRate
-                    = double(truePositive) / actualPositive;
-            double const falsePositiveRate
-                    = double(falsePositive) / actualPositive;
-            double const falseNegativeRate
-                    = double(falseNegative) / actualNegative;
-            double const trueNegativeRate
-                    = double(trueNegative) / actualNegative;
-
-            double const accuracy
-                    = double(truePositive + trueNegative) / totalPopulation;
-
-            std::cout << "\n" << setw(IOMANIP_WIDTH) << "Total population: " <<
-                      totalPopulation
-                      << "\n"
-                      << "\n" << setw(IOMANIP_WIDTH) << "True positive: "
-                      << truePositive
-                      << "\n" << setw(IOMANIP_WIDTH) << "True negative: "
-                      << trueNegative
-                      << "\n" << setw(IOMANIP_WIDTH)
-                      << "False positive (type I error): " << falsePositive
-                      << "\n" << setw(IOMANIP_WIDTH)
-                      << "False negative (type II error): " << falseNegative
-                      << "\n"
-                      << "\n" << setw(IOMANIP_WIDTH) << "Predicted positive: "
-                      << predictedPositive
-                      << "\n" << setw(IOMANIP_WIDTH) << "Predicted negative: "
-                      << predictedNegative
-                      << "\n" << setw(IOMANIP_WIDTH) << "Actual positive: "
-                      << actualPositive
-                      << "\n" << setw(IOMANIP_WIDTH) << "Actual negative: "
-                      << actualNegative
-                      << "\n"
-                      << "\n" << setw(IOMANIP_WIDTH)
-                      << "Positive predictive value: "
-                      << positivePredictiveValue * 100 << " %"
-                      << "\n" << setw(IOMANIP_WIDTH) << "False discovery rate: "
-                      << falseDiscoveryRate * 100 << " %"
-                      << "\n" << setw(IOMANIP_WIDTH) << "False omission rate: "
-                      << falseOmissionRate * 100 << " %"
-                      << "\n" << setw(IOMANIP_WIDTH)
-                      << "Negative prediction value: "
-                      << negativePredictiveValue * 100 << " %"
-                      << "\n"
-                      << "\n" << setw(IOMANIP_WIDTH) << "True positive rate: "
-                      << truePositiveRate * 100 << " %"
-                      << "\n" << setw(IOMANIP_WIDTH) << "False positive rate: "
-                      << falsePositiveRate * 100 << " %"
-                      << "\n" << setw(IOMANIP_WIDTH) << "False negative rate: "
-                      << falseNegativeRate * 100 << " %"
-                      << "\n" << setw(IOMANIP_WIDTH) << "True negative rate: "
-                      << trueNegativeRate * 100 << " %"
-                      << "\n"
-                      << "\n" << setw(IOMANIP_WIDTH) << "Accuracy: "
-                      << accuracy * 100 << " %"
-                      << std::endl;
-        }
+        printTestingResults(multiLayerPerceptron,
+                            trainingExamples, trainingExampleClasses,
+                            dataSetTrainingFilenames[dataSet],
+                            perceptronFilename);
+        printTestingResults(multiLayerPerceptron,
+                            testingExamples, testingExampleClasses,
+                            dataSetTestingFilenames[dataSet],
+                            perceptronFilename);
     }
 
+    std::cout << "\n\n";
     system("pause");
     return 0;
 }

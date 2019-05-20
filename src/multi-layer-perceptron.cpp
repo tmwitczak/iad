@@ -51,6 +51,33 @@ namespace NeuralNetworks
         }
     }
 
+    double getAccuracy
+            (MultiLayerPerceptron const &multiLayerPerceptron,
+             std::vector<TrainingExample> const
+             &testingExamples)
+    {
+        int globalNumberOfAccurateClassifications = 0;
+
+        MultiLayerPerceptron::TestingResults testingResults =
+                multiLayerPerceptron.test(
+                testingExamples);
+
+        for (auto const &testingResultsPerExample
+                : testingResults.testingResultsPerExample)
+        {
+            Vector::Index predictedClass, actualClass;
+            testingResultsPerExample.neurons
+                    .back().array().maxCoeff(&predictedClass);
+            testingResultsPerExample.targets.array().maxCoeff(&actualClass);
+
+            globalNumberOfAccurateClassifications
+                    += (int) (predictedClass == actualClass);
+        }
+        double globalAccuracy = (double) globalNumberOfAccurateClassifications
+                                / testingExamples.size();
+        return globalAccuracy;
+    }
+
     //////////////////////////////////////////// | Class: MultiLayerPerceptron <
     //============================================================= | Methods <<
     //----------------------------------------------------- | Static methods <<<
@@ -104,6 +131,7 @@ namespace NeuralNetworks
 
     MultiLayerPerceptron::TrainingResults MultiLayerPerceptron::train
             (std::vector<TrainingExample> const &trainingExamples,
+             std::vector<TrainingExample> const &testingExamples,
              int const numberOfEpochs,
              double const costGoal,
              double learningCoefficient,
@@ -233,6 +261,13 @@ namespace NeuralNetworks
             {
                 trainingResults.costPerEpochInterval.emplace_back(costPerEpoch);
                 std::cout << "\r epoch: " << epoch;
+
+                trainingResults.accuracyTraining
+                        .emplace_back(getAccuracy(*this,
+                                                  trainingExamples));
+                trainingResults.accuracyTesting
+                        .emplace_back(getAccuracy(*this,
+                                                  testingExamples));
             }
 
             if (costPerEpoch < costGoal)
@@ -398,9 +433,9 @@ namespace NeuralNetworks
     {
         std::vector<PerceptronLayer> layers;
 
-        if (enableBiasPerLayer.empty())
-            enableBiasPerLayer = std::vector<bool>
-                    (numberOfNeuronsPerLayer.size() - 1, true);
+//        if (enableBiasPerLayer.empty())
+//            enableBiasPerLayer = std::vector<bool>
+//                    (numberOfNeuronsPerLayer.size() - 1, true);
         auto enableBias = enableBiasPerLayer.cbegin();
 
         for (auto numberOfNeurons = numberOfNeuronsPerLayer.cbegin();
