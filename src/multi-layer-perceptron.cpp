@@ -228,10 +228,11 @@ namespace NeuralNetworks
             // training examples was achieved
             costPerEpoch /= trainingExamples.size();
 
-            if (epoch % trainingResults.epochInterval == 0)
+            if (epoch % trainingResults.epochInterval == 0
+                || epoch == 0 || epoch == numberOfEpochs - 1)
             {
                 trainingResults.costPerEpochInterval.emplace_back(costPerEpoch);
-                std::cout << "epoch: " << epoch << std::endl;
+                std::cout << "\r epoch: " << epoch;
             }
 
             if (costPerEpoch < costGoal)

@@ -15,4 +15,7 @@ plt.plot([float(i[0]) for i in data],
 plt.title('Funkcja kosztu dla ' + os.path.splitext(sys.argv[1])[0])
 plt.xlabel('Liczba epok')
 plt.ylabel('Koszt')
+plt.autoscale()
+plt.savefig(sys.argv[1] + '.png',
+            dpi=300, bbox_inches='tight')
 plt.show()

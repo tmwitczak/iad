@@ -22,7 +22,7 @@ subprocess.call('convert-classification-data.py'
                 + ' -t 0.75',
                 shell=True)
 
-print('  - \'seeds.csv\'')
+print('  - \'seeds.csv\' (\'seeds-train.csv\', \'seeds-test.csv\')')
 subprocess.call('convert-classification-data.py'
                 + ' -i ./original-data/seeds.csv'
                 + ' -c 7'

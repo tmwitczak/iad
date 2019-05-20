@@ -1,15 +1,21 @@
 ///////////////////////////////////////////////////////////////////// | Includes
 #include "multi-layer-perceptron.hpp"
+#include "training-example.hpp"
 #include <iostream>
 #include <ctime>
+#include <sstream>
+#include <string_view>
+#include <string>
+#include <limits>
+#include <iomanip>
+#include <fstream>
+#include <utility>
 
 using namespace std;
 using namespace NeuralNetworks;
-
-#include "training-example.hpp"
-#include <fstream>
-
 using Vector = Eigen::VectorXd;
+
+constexpr int IOMANIP_WIDTH = 40;
 
 struct TrainingExampleClass
 {
@@ -17,8 +23,6 @@ struct TrainingExampleClass
     std::vector<TrainingExample> trainingExamples;
 };
 
-#include <sstream>
-#include <string_view>
 
 std::vector<std::string_view> split
         (std::string_view stringView,
@@ -60,7 +64,6 @@ std::vector<TrainingExampleClass> readTrainingExamplesFromCsvFile
 
         while (std::getline(file, line) && !line.empty())
         {
-//            std::cout << ".";
             std::vector<std::string_view> tokens = split(line, ",");
 
             if (firstLine)
@@ -144,7 +147,6 @@ std::vector<TrainingExampleClass> readTrainingExamplesFromCsvFile
     return trainingExampleClasses;
 }
 
-#include <utility>
 
 std::string askUserForInput
         (std::string_view const &question,
@@ -152,9 +154,10 @@ std::string askUserForInput
 {
     for (auto const &option
             : options)
-        std::cout << option.first << " | " << option.second << std::endl;
+        std::cout << setw(IOMANIP_WIDTH)
+                  << option.first << " | " << option.second << std::endl;
 
-    std::cout << question << " | ";
+    std::cout << setw(IOMANIP_WIDTH) << question << " | ";
     int userInput;
     std::cin >> userInput;
 
@@ -175,8 +178,6 @@ void saveErrorToFile
              << trainingResults.costPerEpochInterval.at(i) << std::endl;
 }
 
-#include <string>
-#include <limits>
 
 ////////////////////////////////////////////////////////////// | Project: iad-2a
 int main()
@@ -221,12 +222,14 @@ int main()
 
     std::string perceptronFilename;
     std::cout << std::endl;
-    std::cout << "Multi-layer perceptron filename | ";
+    std::cout << setw(IOMANIP_WIDTH) << "Multi-layer perceptron filename"
+              << " | ";
     std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
     std::getline(cin, perceptronFilename);
 
     if (mode == "Training")
     {
+        // Load training examples from file
         std::vector<TrainingExampleClass> trainingExampleClasses
                 = readTrainingExamplesFromCsvFile
                         (dataSetTrainingFilenames[dataSet]);
@@ -238,11 +241,12 @@ int main()
                                     trainingExampleClass.trainingExamples.begin(),
                                     trainingExampleClass.trainingExamples.end());
 
+        // Prepare perceptron
         MultiLayerPerceptron::initialiseRandomNumberGenerator
                 (static_cast<int>(time(nullptr)));
 
         std::string hiddenLayerNeuronNumber;
-        std::cout << "Neurons in hidden layers: ";
+        std::cout << setw(IOMANIP_WIDTH) << "Neurons in hidden layers" << " | ";
         std::getline(std::cin, hiddenLayerNeuronNumber);
 
         std::vector<int> layersNeurons;
@@ -257,8 +261,9 @@ int main()
 
         MultiLayerPerceptron multiLayerPerceptron
                 { layersNeurons,
-                 std::vector<bool>(layersNeurons.size() - 1, true)};
+                  std::vector<bool>(layersNeurons.size() - 1, true) };
 
+        // Get parameters
         int numberOfEpochs;
         double costGoal;
         double learningCoefficientStart;
@@ -267,21 +272,24 @@ int main()
         bool shuffleTrainingData;
         int epochInterval;
 
-        std::cout << "Number of epochs | ";
+        std::cout << setw(IOMANIP_WIDTH) << "Number of epochs" << " | ";
         std::cin >> numberOfEpochs;
-        std::cout << "Cost goal | ";
+        std::cout << setw(IOMANIP_WIDTH) << "Cost goal" << " | ";
         std::cin >> costGoal;
-        std::cout << "Learning coefficient (start) | ";
+        std::cout << setw(IOMANIP_WIDTH) << "Learning coefficient (start)"
+                  << " | ";
         std::cin >> learningCoefficientStart;
-        std::cout << "Learning coefficient (end) | ";
+        std::cout << setw(IOMANIP_WIDTH) << "Learning coefficient (end)"
+                  << " | ";
         std::cin >> learningCoefficientEnd;
-        std::cout << "Momentum coefficient | ";
+        std::cout << setw(IOMANIP_WIDTH) << "Momentum coefficient" << " | ";
         std::cin >> momentumCoefficient;
-        std::cout << "Shuffle training data | ";
+        std::cout << setw(IOMANIP_WIDTH) << "Shuffle training data" << " | ";
         std::cin >> shuffleTrainingData;
-        std::cout << "Epoch interval | ";
+        std::cout << setw(IOMANIP_WIDTH) << "Epoch interval" << " | ";
         std::cin >> epochInterval;
 
+        // Train
         MultiLayerPerceptron::TrainingResults trainingResults
                 = multiLayerPerceptron.train(trainingExamples,
                                              numberOfEpochs,
@@ -293,9 +301,13 @@ int main()
                                              shuffleTrainingData,
                                              epochInterval);
 
-        saveErrorToFile(perceptronFilename + ".cost",
-                        trainingResults);
-        system(("plot-cost-function.py " + perceptronFilename + ".cost").data());
+        // Document learning
+        std::string dirName = "training-results_" + perceptronFilename;
+        std::string plotName = dirName + "/" + perceptronFilename + ".cost";
+        system(("rmdir \"" + dirName + "\" /s /q").data());
+        system(("mkdir \"" + dirName + "\"").data());
+        saveErrorToFile(plotName, trainingResults);
+        system(("plot-cost-function.py " + plotName).data());
 
         multiLayerPerceptron.saveToFile(perceptronFilename);
     }
@@ -317,16 +329,218 @@ int main()
         MultiLayerPerceptron::TestingResults testingResults
                 = multiLayerPerceptron.test(testingExamples);
 
-        int avg = 0;
-        for (auto const &i : testingResults.testingResultsPerExample)
+        // Accuracy
+        int globalNumberOfAccurateClassifications = 0;
+        std::vector<int> accurateClassificationsPerClass
+                (testingExampleClasses.size(), 0);
+        std::vector<int> classCount
+                (testingExampleClasses.size(), 0);
+
+        Eigen::MatrixXd confusionMatrix = Eigen::MatrixXd::Zero
+                (testingExampleClasses.size(),
+                 testingExampleClasses.size());
+        std::vector<Eigen::MatrixXd> confusionPerClass
+                (testingExampleClasses.size(), Eigen::MatrixXd::Zero(2, 2));
+
+        for (auto const &testingResultsPerExample
+                : testingResults.testingResultsPerExample)
         {
-            Vector::Index classNumber;
-            i.neurons.back().array().maxCoeff(&classNumber);
-            avg += (int) (i.targets(classNumber) == 1.0);
+            Vector::Index predictedClass, actualClass;
+            testingResultsPerExample.neurons
+                    .back().array().maxCoeff(&predictedClass);
+            testingResultsPerExample.targets.array().maxCoeff(&actualClass);
+
+            confusionMatrix(predictedClass, actualClass)++;
+
+            for (int i = 0; i < confusionPerClass.size(); i++)
+            {
+                // True positive
+                if (actualClass == i && predictedClass == i)
+                    confusionPerClass.at(i)(0, 0)++;
+                    // True negative
+                else if (actualClass != i && predictedClass != i)
+                    confusionPerClass.at(i)(1, 1)++;
+                    // False positive (type I error)
+                else if (actualClass != i && predictedClass == i)
+                    confusionPerClass.at(i)(0, 1)++;
+                    // False negative (type II error)
+                else if (actualClass == i && predictedClass != i)
+                    confusionPerClass.at(i)(1, 0)++;
+            }
+
+            globalNumberOfAccurateClassifications
+                    += (int) (predictedClass == actualClass);
+            accurateClassificationsPerClass.at((int) actualClass)
+                    += (int) (predictedClass == actualClass);
+            classCount.at((int) actualClass)++;
         }
-        cout << "dokl: " << (double) avg / testingExamples.size() * 100 << " %"
-             <<
-             endl;
+        double globalAccuracy = (double) globalNumberOfAccurateClassifications
+                                / testingExamples.size();
+
+        std::cout << "Confusion matrix: " << std::endl;
+        for (int i = 0; i < confusionMatrix.rows(); i++)
+        {
+            if (i == 0)
+            {
+                std::cout << setw(20) << " " << "   ";
+                for (auto const &testingExampleClass
+                        : testingExampleClasses)
+                    std::cout
+                            << setw(testingExampleClass.className
+                                            .length() + 5)
+                            << testingExampleClass.className << " ";
+                std::cout << std::endl;
+            }
+            std::cout << setw(20) << testingExampleClasses.at(i).className
+                      << " | ";
+
+            for (int j = 0; j < confusionMatrix.cols(); j++)
+            {
+                std::cout
+                        << setw(testingExampleClasses.at(j).className.length()
+                                + 5) << confusionMatrix(i, j) << " ";
+            }
+
+            std::cout << " | "
+                      << confusionMatrix(i, i) / confusionMatrix.row(i).sum() *
+                         100;
+            std::cout << std::endl;
+        }
+        std::cout << setw(20) << " " << "   ";
+        for (int i = 0; i < confusionMatrix.cols(); i++)
+            std::cout
+                    << setw(testingExampleClasses.at(i).className.length() + 5)
+                    << confusionMatrix(i, i) / confusionMatrix.col(i).sum()
+                       * 100 << " ";
+
+        std::cout << std::endl << std::string(40, '-') << std::endl;
+        std::cout << "> " << dataSetTestingFilenames[dataSet] << std::endl;
+        std::cout << "  - Global accuracy | " << globalAccuracy * 100
+                  << " %" << std::endl;
+
+        for (int i = 0; i < testingExampleClasses.size(); i++)
+            std::cout << "  -- " << testingExampleClasses.at(i).className
+                      << " | " << (double) accurateClassificationsPerClass.at(i)
+                                  / classCount.at(i) * 100 << " %" << std::endl;
+
+        // Confusion matrices per class
+        for (int k = 0; k < confusionPerClass.size(); k++)
+        {
+            std::cout << std::endl;
+            std::cout << "> [" << testingExampleClasses.at(k).className << "]"
+                      << std::endl;
+
+            for (int i = 0; i < confusionPerClass.at(k).rows(); i++)
+            {
+                if (i == 0)
+                {
+                    std::cout << setw(20) << " " << "   "
+                              << setw(8 + 5) << "Positive" << " "
+                              << setw(8 + 5) << "Negative"
+                              << std::endl;
+                }
+                std::cout << setw(20) << (i == 0 ? "Positive" : "Negative")
+                          << " | ";
+
+                for (int j = 0; j < confusionPerClass.at(k).cols(); j++)
+                    std::cout
+                            << setw(8 + 5) << confusionPerClass.at(k)(i, j)
+                            << " ";
+
+                std::cout << " | "
+                          << confusionPerClass.at(k)(i, i) /
+                             confusionPerClass.at(k).row(i).sum() *
+                             100;
+                std::cout << std::endl;
+            }
+            std::cout << setw(20) << " " << "   ";
+            for (int i = 0; i < confusionPerClass.at(k).cols(); i++)
+                std::cout
+                        << setw(8 + 5)
+                        << confusionPerClass.at(k)(i, i) /
+                           confusionPerClass.at(k).col(i).sum()
+                           * 100 << " ";
+            std::cout << std::endl;
+
+            // Statistics
+            int const totalPopulation = confusionPerClass.at(k).sum();
+
+            int const &truePositive = confusionPerClass.at(k)(0, 0);
+            int const &trueNegative = confusionPerClass.at(k)(1, 1);
+            int const &falsePositive = confusionPerClass.at(k)(0, 1);
+            int const &falseNegative = confusionPerClass.at(k)(1, 0);
+
+            int const predictedPositive = truePositive + falsePositive;
+            int const predictedNegative = falseNegative + trueNegative;
+            int const actualPositive = truePositive + falseNegative;
+            int const actualNegative = falsePositive + trueNegative;
+
+            double const positivePredictiveValue
+                    = double(truePositive) / predictedPositive;
+            double const falseDiscoveryRate
+                    = double(falsePositive) / predictedPositive;
+            double const falseOmissionRate
+                    = double(falseNegative) / predictedNegative;
+            double const negativePredictiveValue
+                    = double(trueNegative) / predictedNegative;
+
+            double const truePositiveRate
+                    = double(truePositive) / actualPositive;
+            double const falsePositiveRate
+                    = double(falsePositive) / actualPositive;
+            double const falseNegativeRate
+                    = double(falseNegative) / actualNegative;
+            double const trueNegativeRate
+                    = double(trueNegative) / actualNegative;
+
+            double const accuracy
+                    = double(truePositive + trueNegative) / totalPopulation;
+
+            std::cout << "\n" << setw(IOMANIP_WIDTH) << "Total population: " <<
+                      totalPopulation
+                      << "\n"
+                      << "\n" << setw(IOMANIP_WIDTH) << "True positive: "
+                      << truePositive
+                      << "\n" << setw(IOMANIP_WIDTH) << "True negative: "
+                      << trueNegative
+                      << "\n" << setw(IOMANIP_WIDTH)
+                      << "False positive (type I error): " << falsePositive
+                      << "\n" << setw(IOMANIP_WIDTH)
+                      << "False negative (type II error): " << falseNegative
+                      << "\n"
+                      << "\n" << setw(IOMANIP_WIDTH) << "Predicted positive: "
+                      << predictedPositive
+                      << "\n" << setw(IOMANIP_WIDTH) << "Predicted negative: "
+                      << predictedNegative
+                      << "\n" << setw(IOMANIP_WIDTH) << "Actual positive: "
+                      << actualPositive
+                      << "\n" << setw(IOMANIP_WIDTH) << "Actual negative: "
+                      << actualNegative
+                      << "\n"
+                      << "\n" << setw(IOMANIP_WIDTH)
+                      << "Positive predictive value: "
+                      << positivePredictiveValue * 100 << " %"
+                      << "\n" << setw(IOMANIP_WIDTH) << "False discovery rate: "
+                      << falseDiscoveryRate * 100 << " %"
+                      << "\n" << setw(IOMANIP_WIDTH) << "False omission rate: "
+                      << falseOmissionRate * 100 << " %"
+                      << "\n" << setw(IOMANIP_WIDTH)
+                      << "Negative prediction value: "
+                      << negativePredictiveValue * 100 << " %"
+                      << "\n"
+                      << "\n" << setw(IOMANIP_WIDTH) << "True positive rate: "
+                      << truePositiveRate * 100 << " %"
+                      << "\n" << setw(IOMANIP_WIDTH) << "False positive rate: "
+                      << falsePositiveRate * 100 << " %"
+                      << "\n" << setw(IOMANIP_WIDTH) << "False negative rate: "
+                      << falseNegativeRate * 100 << " %"
+                      << "\n" << setw(IOMANIP_WIDTH) << "True negative rate: "
+                      << trueNegativeRate * 100 << " %"
+                      << "\n"
+                      << "\n" << setw(IOMANIP_WIDTH) << "Accuracy: "
+                      << accuracy * 100 << " %"
+                      << std::endl;
+        }
     }
 
     system("pause");
