@@ -18,11 +18,11 @@ using Vector = Eigen::VectorXd;
 
 constexpr int IOMANIP_WIDTH = 40;
 
-struct TrainingExampleClass
-{
-    std::string className;
-    std::vector<TrainingExample> trainingExamples;
-};
+//struct TrainingExampleClass
+//{
+//    std::string className;
+//    std::vector<TrainingExample> trainingExamples;
+//};
 
 
 std::vector<std::string_view> split
@@ -50,10 +50,12 @@ std::vector<std::string_view> split
     return output;
 }
 
-std::vector<TrainingExampleClass> readTrainingExamplesFromCsvFile
+std::pair<std::vector<TrainingExample>, std::vector<std::string>>
+readTrainingExamplesFromCsvFile
         (std::string const &filename)
 {
-    std::vector<TrainingExampleClass> trainingExampleClasses;
+    std::vector<std::string> classLabels;
+    std::vector<TrainingExample> trainingExamples;
 
     std::ifstream file(filename, std::ios::in);
     {
@@ -61,18 +63,21 @@ std::vector<TrainingExampleClass> readTrainingExamplesFromCsvFile
         bool firstLine = true;
         int numberOfOutputs = 0;
         int numberOfInputs = 0;
-        std::vector<std::string> classes;
 
-        while (std::getline(file, line) && !line.empty())
+        while (std::getline(file, line)
+               && !line.empty())
         {
-            std::vector<std::string_view> tokens = split(line, ",");
+            std::vector<std::string_view> tokens
+                    = split(line, ",");
 
             if (firstLine)
             {
                 int numberOfClasses = 0;
                 for (auto const &i : tokens)
                     numberOfClasses += (int) (i != " ");
-                classes.assign(tokens.end() - numberOfClasses, tokens.end());
+
+                classLabels.assign(tokens.end() - numberOfClasses,
+                                   tokens.end());
 
                 firstLine = false;
                 numberOfInputs = tokens.size() - numberOfClasses;
@@ -80,72 +85,33 @@ std::vector<TrainingExampleClass> readTrainingExamplesFromCsvFile
             }
             else
             {
-                TrainingExample trainingExample;
-                trainingExample.inputs = Vector { numberOfInputs };
-                trainingExample.outputs = Vector { numberOfOutputs };
+                // Load training example
+                TrainingExample trainingExample { Vector { numberOfInputs },
+                                                  Vector { numberOfOutputs }};
 
-                for (int i = 0; i < numberOfInputs; i++)
+                // Read inputs
+                for (int i = 0, j = 0;
+                     i < numberOfInputs;
+                     i++, j++)
                 {
-                    // TODO: Rewrite that monster!
-                    double inputNumber;
-                    std::stringstream str;
-                    str << tokens.at(i);
-                    str >> inputNumber;
-                    trainingExample.inputs(i) = inputNumber;
+                    trainingExample.inputs(i) = atof(tokens.at(j).data());
                 }
 
-                for (int i = 0; i < numberOfOutputs; i++)
+                // Read outputs
+                for (int i = 0, j = numberOfInputs;
+                     i < numberOfOutputs;
+                     i++, j++)
                 {
-                    // TODO: Rewrite that monster!
-                    double inputNumber;
-                    std::stringstream str;
-                    str << tokens.at(i + numberOfInputs);
-                    str >> inputNumber;
-                    trainingExample.outputs(i) = inputNumber;
+                    trainingExample.outputs(i) = atof(tokens.at(j).data());
                 }
 
-                bool isClassAlreadyIn = false;
-                int classNumber = -1;
-                trainingExample.outputs.array().maxCoeff(&classNumber);
-                for (auto const &i : trainingExampleClasses)
-                {
-                    if (i.className == classes.at(classNumber))
-                    {
-                        isClassAlreadyIn = true;
-                        break;
-                    }
-                }
-
-                if (isClassAlreadyIn)
-                {
-                    for (auto &i : trainingExampleClasses)
-                    {
-//                        trainingExample.outputs.array().maxCoeff(&classNumber);
-                        if (i.className == classes.at(classNumber))
-                            i.trainingExamples.push_back(trainingExample);
-                    }
-//                    for (int i = 0; i < trainingExampleClasses.size(); i++)
-//                        if (trainingExampleClasses[i].className ==
-//                            tokens.back())
-//                        {
-//                            trainingExample.outputs(i) = 1.0;
-//                            trainingExampleClasses[i].trainingExamples.push_back
-//                                    (trainingExample);
-//                        }
-                }
-                else
-                {
-                    TrainingExampleClass newClass;
-//                    trainingExample.outputs(
-//                            trainingExampleClasses.size()) = 1.0;
-                    newClass.className = classes.at(classNumber);
-                    newClass.trainingExamples.push_back(trainingExample);
-                    trainingExampleClasses.push_back(newClass);
-                }
+                // Save the training example
+                trainingExamples.push_back(trainingExample);
             }
         }
     }
-    return trainingExampleClasses;
+
+    return std::make_pair(trainingExamples, classLabels);
 }
 
 
@@ -207,8 +173,8 @@ std::string braces
 
 void printTestingResults(MultiLayerPerceptron const &multiLayerPerceptron,
                          std::vector<TrainingExample> const &testingExamples,
-                         std::vector<TrainingExampleClass> const &
-                         testingExampleClasses,
+                         std::vector<std::string> const &
+                         testingClassLabels,
                          std::string const &testFilename,
                          std::string const &perceptronFilename)
 {
@@ -218,15 +184,15 @@ void printTestingResults(MultiLayerPerceptron const &multiLayerPerceptron,
     // Accuracy
     int globalNumberOfAccurateClassifications = 0;
     std::vector<int> accurateClassificationsPerClass
-            (testingExampleClasses.size(), 0);
+            (testingClassLabels.size(), 0);
     std::vector<int> classCount
-            (testingExampleClasses.size(), 0);
+            (testingClassLabels.size(), 0);
 
     Eigen::MatrixXd confusionMatrix = Eigen::MatrixXd::Zero
-            (testingExampleClasses.size(),
-             testingExampleClasses.size());
+            (testingClassLabels.size(),
+             testingClassLabels.size());
     std::vector<Eigen::MatrixXd> confusionPerClass
-            (testingExampleClasses.size(), Eigen::MatrixXd::Zero(2, 2));
+            (testingClassLabels.size(), Eigen::MatrixXd::Zero(2, 2));
 
     for (auto const &testingResultsPerExample
             : testingResults.testingResultsPerExample)
@@ -271,21 +237,21 @@ void printTestingResults(MultiLayerPerceptron const &multiLayerPerceptron,
         if (i == 0)
         {
             std::cout << setw(20) << " ";
-            for (auto const &testingExampleClass
-                    : testingExampleClasses)
+            for (auto const &testingClassLabel
+                    : testingClassLabels)
                 std::cout
-                        << setw(braces(testingExampleClass.className)
+                        << setw(braces(testingClassLabel)
                                         .length() + 5)
-                        << braces(testingExampleClass.className) << " ";
+                        << braces(testingClassLabel) << " ";
             std::cout << std::endl;
         }
         std::cout << setw(20)
-                  << braces(testingExampleClasses.at(i).className);
+                  << braces(testingClassLabels.at(i));
 
         for (int j = 0; j < confusionMatrix.cols(); j++)
         {
             std::cout
-                    << setw(braces(testingExampleClasses.at(j).className)
+                    << setw(braces(testingClassLabels.at(j))
                                     .length() + 5) << confusionMatrix(i, j)
                     << " ";
         }
@@ -298,7 +264,7 @@ void printTestingResults(MultiLayerPerceptron const &multiLayerPerceptron,
 //        std::cout << setw(20) << " ";
 //        for (int i = 0; i < confusionMatrix.cols(); i++)
 //            std::cout
-//                    << setw(testingExampleClasses.at(i).className.length() + 5)
+//                    << setw(testingClassLabels.at(i).className.length() + 5)
 //                    << confusionMatrix(i, i) / confusionMatrix.col(i).sum()
 //                       * 100 << " ";
 
@@ -308,7 +274,7 @@ void printTestingResults(MultiLayerPerceptron const &multiLayerPerceptron,
               << "\n" << setw(IOMANIP_WIDTH) << "Accuracy | "
               << globalAccuracy * 100 << " %" << std::endl;
 
-//        for (int i = 0; i < testingExampleClasses.size(); i++)
+//        for (int i = 0; i < testingClassLabels.size(); i++)
 //            std::cout << "  -- " << testingExampleCla7sses.at(i).className
 //                      << " | " << (double) accurateClassificationsPerClass.at(i)
 //                                  / classCount.at(i) * 100 << " %" << std::endl;
@@ -317,8 +283,7 @@ void printTestingResults(MultiLayerPerceptron const &multiLayerPerceptron,
     for (int k = 0; k < confusionPerClass.size(); k++)
     {
         std::cout << "\n\n\n";
-        std::cout << "> " << braces(testingExampleClasses.at(k)
-                                            .className) << std::endl;
+        std::cout << "> " << braces(testingClassLabels.at(k)) << std::endl;
 
         for (int i = 0; i < confusionPerClass.at(k).rows(); i++)
         {
@@ -477,7 +442,8 @@ int main()
                                            { 5, "Seeds" },
                                            { 6, "Seeds (normalised)" },
                                            { 7, "Seeds (standardised)" },
-                                           { 8, "Digits" }});
+                                           { 8, "Digits" },
+                                           { 9, "Digits (normalised)" }});
 
     // TODO: Klasyfikator
 
@@ -489,7 +455,8 @@ int main()
              { "Seeds",                "./data/seeds-train.csv" },
              { "Seeds (normalised)",   "./data/seeds-normalised-train.csv" },
              { "Seeds (standardised)", "./data/seeds-standardised-train.csv" },
-             { "Digits",               "./data/digits-train.csv" }};
+             { "Digits",               "./data/digits-train.csv" },
+             { "Digits (normalised)",  "./data/digits-normalised-train.csv" }};
 
     std::map<std::string, std::string> dataSetTestingFilenames
             {{ "Identity",             "./data/identity-test.csv" },
@@ -499,7 +466,8 @@ int main()
              { "Seeds",                "./data/seeds-test.csv" },
              { "Seeds (normalised)",   "./data/seeds-normalised-test.csv" },
              { "Seeds (standardised)", "./data/seeds-standardised-test.csv" },
-             { "Digits",               "./data/digits-test.csv" }};
+             { "Digits",               "./data/digits-test.csv" },
+             { "Digits (normalised)",  "./data/digits-normalised-test.csv" }};
 
 
     std::cout << endl;
@@ -515,30 +483,15 @@ int main()
     std::getline(cin, perceptronFilename);
 
     // Load training and testing examples from file
-    std::vector<TrainingExampleClass> trainingExampleClasses
-            = readTrainingExamplesFromCsvFile
-                    (dataSetTrainingFilenames[dataSet]);
+    auto const[trainingExamples, trainingClassLabels]
+    = readTrainingExamplesFromCsvFile
+            (dataSetTrainingFilenames[dataSet]);
 
-    std::vector<TrainingExample> trainingExamples;
-    for (auto const &trainingExampleClass
-            : trainingExampleClasses)
-        trainingExamples.insert(trainingExamples.end(),
-                                trainingExampleClass.trainingExamples.begin(),
-                                trainingExampleClass.trainingExamples.end());
+    auto const[testingExamples, testingClassLabels]
+    = readTrainingExamplesFromCsvFile
+            (dataSetTestingFilenames[dataSet]);
 
-    std::vector<TrainingExampleClass> testingExampleClasses
-            = readTrainingExamplesFromCsvFile
-                    (dataSetTestingFilenames[dataSet]);
-
-    std::vector<TrainingExample> testingExamples;
-    for (auto const &testingExampleClass
-            : testingExampleClasses)
-        testingExamples.insert(testingExamples.end(),
-                               testingExampleClass.trainingExamples.begin(),
-                               testingExampleClass.trainingExamples.end());
-
-
-    // Do the math
+    // Do the math :)
     if (mode == "Training")
     {
         // Prepare perceptron
@@ -568,7 +521,7 @@ int main()
         std::vector<bool> biasesPerLayer;
 
         for (auto const &bias : split(biases))
-            biasesPerLayer.push_back((bool)atoi(bias.data()));
+            biasesPerLayer.push_back((bool) atoi(bias.data()));
 
         if (biasesPerLayer.empty())
             biasesPerLayer = std::vector<bool>(layersNeurons.size() - 1, true);
@@ -655,11 +608,11 @@ int main()
         MultiLayerPerceptron multiLayerPerceptron(perceptronFilename);
 
         printTestingResults(multiLayerPerceptron,
-                            trainingExamples, trainingExampleClasses,
+                            trainingExamples, trainingClassLabels,
                             dataSetTrainingFilenames[dataSet],
                             perceptronFilename);
         printTestingResults(multiLayerPerceptron,
-                            testingExamples, testingExampleClasses,
+                            testingExamples, testingClassLabels,
                             dataSetTestingFilenames[dataSet],
                             perceptronFilename);
     }
