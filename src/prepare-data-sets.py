@@ -19,7 +19,7 @@ subprocess.call('convert-classification-data.py'
                 + ' -o ./prepared-data/iris.csv'
                 + ' -n ./prepared-data/iris-normalised.csv'
                 + ' -s ./prepared-data/iris-standardised.csv'
-                + ' -t 0.75',
+                + ' -t 0.6',
                 shell=True)
 
 print('  - \'seeds.csv\' (\'seeds-train.csv\', \'seeds-test.csv\')')
@@ -29,21 +29,27 @@ subprocess.call('convert-classification-data.py'
                 + ' -o ./prepared-data/seeds.csv'
                 + ' -n ./prepared-data/seeds-normalised.csv'
                 + ' -s ./prepared-data/seeds-standardised.csv'
-                + ' -t 0.75',
+                + ' -t 0.6',
                 shell=True)
 
 print('  - \'digits-train.csv\'')
 subprocess.call('convert-classification-data.py'
                 + ' -i ./original-data/digits-train.csv'
                 + ' -c 0'
-                + ' -o ./prepared-data/digits-train.csv',
+                + ' -o ./prepared-data/digits-train.csv'
+                + ' -n ./prepared-data/digits-normalised-train.csv'
+                + ' -0 0'
+                + ' -1 255',
                 shell=True)
 
 print('  - \'digits-test.csv\'')
 subprocess.call('convert-classification-data.py'
                 + ' -i ./original-data/digits-test.csv'
                 + ' -c 0'
-                + ' -o ./prepared-data/digits-test.csv',
+                + ' -o ./prepared-data/digits-test.csv'
+                + ' -n ./prepared-data/digits-normalised-test.csv'
+                + ' -0 0'
+                + ' -1 255',
                 shell=True)
 
 # ---------------------------------------------------------------------------- #

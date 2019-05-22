@@ -74,7 +74,9 @@ def load_data_from_csv_file(
         class_labels_column_number: int,
         *,
         normalised: bool,
-        standardised: bool) \
+        standardised: bool,
+        normalise_min: int,
+        normalise_max: int) \
         -> ClassificationData:
     """ Load data from csv file and separate numeric values from classes.
     Parameters
@@ -120,10 +122,19 @@ def load_data_from_csv_file(
         stdev_vector: Vector = empty_vector(len(data[0]))
 
         for i in range(len(data[0])):
-            min_vector[i] = min(get_column(data, i))
-            max_vector[i] = max(get_column(data, i))
-            mean_vector[i] = statistics.mean(get_column(data, i))
-            stdev_vector[i] = statistics.stdev(get_column(data, i))
+            if normalise_min is not None:
+                min_vector[i] = normalise_min
+            else:
+                min_vector[i] = min(get_column(data, i))
+
+            if normalise_max is not None:
+                max_vector[i] = normalise_max
+            else:
+                max_vector[i] = max(get_column(data, i))
+
+            if standardised:
+                mean_vector[i] = statistics.mean(get_column(data, i))
+                stdev_vector[i] = statistics.stdev(get_column(data, i))
 
         for vector in data:
             if normalised:
@@ -193,14 +204,17 @@ def main(
     standardise: bool = False
     standardised_file: str
     training_proportion: float = -1.0
+    normalise_min: int = None
+    normalise_max: int = None
 
     try:
         opts, args = getopt.getopt(argv,
-                                   "i:c:o:n:s:t:",
+                                   "i:c:o:n:s:t:0:1:",
                                    ["input-file=", "class-column=",
                                     'output-file=',
                                     "normalised-file=", 'standardised-file=',
-                                    "training-proportion="])
+                                    "training-proportion=",
+                                    "normalise-min=", "normalise-max"])
 
     except getopt.GetoptError:
         print('blad')  # TODO: Write better error message!
@@ -221,6 +235,12 @@ def main(
             standardised_file = arg
         elif opt in ('-t', '--training-proportion'):
             training_proportion = float(arg)
+        elif opt in ('-0', '--normalise-min'):
+            normalise = True
+            normalise_min = float(arg)
+        elif opt in ('-1', '--normalise-max'):
+            normalise = True
+            normalise_max = float(arg)
 
     # print(input_file)
     # print(class_column)
@@ -237,7 +257,9 @@ def main(
         = load_data_from_csv_file(input_file,
                                   class_column,
                                   normalised=normalise,
-                                  standardised=standardise)
+                                  standardised=standardise,
+                                  normalise_min=normalise_min,
+                                  normalise_max=normalise_max)
 
     if training_proportion == -1.0:
         write_classification_data_to_csv_file(
