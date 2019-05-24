@@ -25,10 +25,11 @@ add_executable(iad-2a
                rectified-linear-unit.cpp
                rectified-linear-unit.hpp
                parametric-rectified-linear-unit.cpp
-               parametric-rectified-linear-unit.hpp)
+               parametric-rectified-linear-unit.hpp k-nearest-neighbours.cpp k-nearest-neighbours.hpp)
 
 set_target_properties(iad-2a PROPERTIES
                       RUNTIME_OUTPUT_DIRECTORY ${CMAKE_HOME_DIRECTORY})
+
 
 #target_compile_options(iad-2a -Wall -Wextra -Wpedantic -Werror)
 
