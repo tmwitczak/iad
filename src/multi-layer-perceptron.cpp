@@ -416,28 +416,6 @@ namespace NeuralNetworks
             binaryInputArchive(*this);
         }
         file.close();
-//        std::ifstream file;
-//        file.open(filename);
-//        {
-//            std::string line;
-//            while (std::getline(file, line))
-//            {
-//                std::istringstream inputStringStream { line };
-//
-//                std::string token;
-//                if (!(inputStringStream >> token))
-//                    break;
-//
-//                if (token == ">>")
-//                    continue;
-//
-//                if (token == ">")
-//                {
-//
-//                }
-//            }
-//        }
-//        file.close();
     }
 
     //----------------------------------------------------- | Helper methods <<<
@@ -450,7 +428,6 @@ namespace NeuralNetworks
             outputs.emplace_back(layer.feedForward(outputs.back()));
 
         outputs.erase(outputs.begin());
-        //std::reverse(outputs.begin(), outputs.end());
 
         return outputs;
     }
@@ -459,36 +436,6 @@ namespace NeuralNetworks
             (std::vector<Vector> const &inputsPerLayer,
              Vector const &errors) const
     {
-//            std::vector<Eigen::VectorXd> errors
-//                        { trainingExample.outputs - outputsPerLayer.back() };
-//
-//                int x = layers.size() - 1;
-//                for (auto layer = layers.end() - 1;
-//                     layer != layers.begin(); layer--)
-//                {
-//
-//                    errors.push_back
-//                            (layer->backpropagate(errors.back(),
-//                                                  outputsPerLayer.at(x)));
-//
-//                    x--;
-//
-//                    //VectorXd target{ VectorXd::Zero(layer->numberOfInputs()) };
-//
-//                    /*for (int i = 0; i < layer->numberOfOutputs(); i++)
-//                    {
-//                        for (int j = 0; j < layer->numberOfInputs(); j++)
-//                        {
-//                            target(j) +=
-//                                (outputs.back().array() * (VectorXd::Ones(outputs.back().size()).array() - outputs.back().array())).matrix()
-//                                targets.back()(i);
-//                        }
-//                    }
-//
-//                    targets.push_back(target);*/
-//                }
-//                std::reverse(errors.begin(), errors.end());
-//            errorsSum += errors;
         std::vector<Eigen::VectorXd> propagatedErrors { errors };
 
         auto inputPerLayer = inputsPerLayer.rbegin();
