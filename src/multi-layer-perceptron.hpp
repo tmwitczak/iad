@@ -27,9 +27,6 @@ namespace NeuralNetworks
                 (int const &seed);
 
         //--------------------------------------------------- | Constructors <<<
-        MultiLayerPerceptron
-                () = delete;
-
         explicit MultiLayerPerceptron
                 (std::vector<int> const &numberOfNeurons,
                  std::vector<bool> const &enableBiasPerLayer);
