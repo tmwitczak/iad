@@ -120,15 +120,8 @@ namespace NeuralNetworks
 
     MultiLayerPerceptron::MultiLayerPerceptron
             (std::string const &filename)
-//            :
-//            MultiLayerPerceptron({1, 1}, {true, true})
     {
-        std::ifstream file(filename, std::ios::in | std::ios::binary);
-        {
-            cereal::BinaryInputArchive binaryInputArchive(file);
-            binaryInputArchive(*this);
-        }
-        file.close();
+        readFromFile(filename);
     }
 
     //---------------------------------------------------------- | Operators <<<
