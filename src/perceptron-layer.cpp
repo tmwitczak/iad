@@ -11,7 +11,7 @@
 #include <memory>
 #include <utility>
 
-////////////////////////////////////////////////////// TODO: Name this section.
+/////////////////////////////////////////////////////////// | Using declarations
 using Array = Eigen::ArrayXd;
 using Matrix = Eigen::MatrixXd;
 using Vector = Eigen::VectorXd;
