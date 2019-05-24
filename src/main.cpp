@@ -11,6 +11,7 @@
 #include <iomanip>
 #include <fstream>
 #include <utility>
+#include <list>
 
 using namespace std;
 using namespace NeuralNetworks;
@@ -18,12 +19,11 @@ using Vector = Eigen::VectorXd;
 
 constexpr int IOMANIP_WIDTH = 40;
 
-
-std::vector<std::string_view> split
+std::list<std::string_view> split
         (std::string_view stringView,
          std::string_view delimiters)
 {
-    std::vector<std::string_view> output;
+    std::list<std::string_view> output;
 
     for (auto first = stringView.data(),
                  second = stringView.data(),
@@ -48,11 +48,14 @@ std::pair<std::vector<TrainingExample>, std::vector<std::string>>
 readTrainingExamplesFromCsvFile
         (std::string const &filename)
 {
-    std::vector<std::string> classLabels;
-    std::vector<TrainingExample> trainingExamples;
+    std::ios::sync_with_stdio(false);
+
+    std::list<std::string> classLabels;
+    std::list<TrainingExample> trainingExamples;
 
     std::ifstream file(filename, std::ios::in);
     {
+        int lineNumber = 1;
         std::string line;
         bool firstLine = true;
         int numberOfOutputs = 0;
@@ -61,21 +64,21 @@ readTrainingExamplesFromCsvFile
         while (std::getline(file, line)
                && !line.empty())
         {
-            std::vector<std::string_view> tokens
+            std::cout << "line: " << lineNumber++ << "\r";
+
+            std::list<std::string_view> tokens
                     = split(line, ",");
 
             if (firstLine)
             {
-                int numberOfClasses = 0;
-                for (auto const &i : tokens)
-                    numberOfClasses += (int) (i != " ");
-
-                classLabels.assign(tokens.end() - numberOfClasses,
-                                   tokens.end());
+                for (auto const &token
+                        : tokens)
+                    if (token != " ")
+                        classLabels.emplace_back(token);
 
                 firstLine = false;
-                numberOfInputs = tokens.size() - numberOfClasses;
-                numberOfOutputs = numberOfClasses;
+                numberOfInputs = tokens.size() - classLabels.size();
+                numberOfOutputs = classLabels.size();
             }
             else
             {
@@ -84,28 +87,34 @@ readTrainingExamplesFromCsvFile
                                                   Vector { numberOfOutputs }};
 
                 // Read inputs
+                auto token = tokens.cbegin();
+
                 for (int i = 0, j = 0;
                      i < numberOfInputs;
-                     i++, j++)
+                     i++, j++, ++token)
                 {
-                    trainingExample.inputs(i) = atof(tokens.at(j).data());
+                    trainingExample.inputs(i) = std::stod(token->data());
                 }
 
                 // Read outputs
                 for (int i = 0, j = numberOfInputs;
                      i < numberOfOutputs;
-                     i++, j++)
+                     i++, j++, ++token)
                 {
-                    trainingExample.outputs(i) = atof(tokens.at(j).data());
+                    trainingExample.outputs(i) = std::stod(token->data());
                 }
 
                 // Save the training example
-                trainingExamples.push_back(trainingExample);
+                trainingExamples.emplace_back(trainingExample);
             }
         }
     }
 
-    return std::make_pair(trainingExamples, classLabels);
+    return std::make_pair<std::vector<TrainingExample>, std::vector<std::string>>
+            ({ std::make_move_iterator(std::begin(trainingExamples)),
+               std::make_move_iterator(std::end(trainingExamples)) },
+             { std::make_move_iterator(std::begin(classLabels)),
+               std::make_move_iterator(std::end(classLabels)) });
 }
 
 
@@ -116,7 +125,7 @@ std::string askUserForInput
     for (auto const &option
             : options)
         std::cout << setw(IOMANIP_WIDTH)
-                  << option.first << " | " << option.second << std::endl;
+                  << option.first << " | " << option.second << "\n";
 
     std::cout << setw(IOMANIP_WIDTH) << question << " | ";
     int userInput;
@@ -136,7 +145,7 @@ void saveErrorToFile
     std::ofstream file(filename, std::ios::trunc);
     for (int i = 0; i < trainingResults.costPerEpochInterval.size(); i++)
         file << i * trainingResults.epochInterval << ","
-             << trainingResults.costPerEpochInterval.at(i) << std::endl;
+             << trainingResults.costPerEpochInterval.at(i) << "\n";
 }
 
 void saveTrainingAccuracyToFile
@@ -146,7 +155,7 @@ void saveTrainingAccuracyToFile
     std::ofstream file(filename, std::ios::trunc);
     for (int i = 0; i < trainingResults.costPerEpochInterval.size(); i++)
         file << i * trainingResults.epochInterval << ","
-             << trainingResults.accuracyTraining.at(i) << std::endl;
+             << trainingResults.accuracyTraining.at(i) << "\n";
 }
 
 void saveTestingAccuracyToFile
@@ -156,7 +165,7 @@ void saveTestingAccuracyToFile
     std::ofstream file(filename, std::ios::trunc);
     for (int i = 0; i < trainingResults.costPerEpochInterval.size(); i++)
         file << i * trainingResults.epochInterval << ","
-             << trainingResults.accuracyTesting.at(i) << std::endl;
+             << trainingResults.accuracyTesting.at(i) << "\n";
 }
 
 std::string braces
@@ -223,9 +232,9 @@ void printTestingResults(MultiLayerPerceptron const &multiLayerPerceptron,
     double globalAccuracy = (double) globalNumberOfAccurateClassifications
                             / testingExamples.size();
 
-    std::cout << "\n\n>> " << testFilename << std::endl;
+    std::cout << "\n\n>> " << testFilename << "\n";
 
-    std::cout << "\n > Global confusion matrix: " << std::endl;
+    std::cout << "\n > Global confusion matrix: " << "\n";
     for (int i = 0; i < confusionMatrix.rows(); i++)
     {
         if (i == 0)
@@ -237,7 +246,7 @@ void printTestingResults(MultiLayerPerceptron const &multiLayerPerceptron,
                         << setw(braces(testingClassLabel)
                                         .length() + 5)
                         << braces(testingClassLabel) << " ";
-            std::cout << std::endl;
+            std::cout << "\n";
         }
         std::cout << setw(20)
                   << braces(testingClassLabels.at(i));
@@ -250,21 +259,21 @@ void printTestingResults(MultiLayerPerceptron const &multiLayerPerceptron,
                     << " ";
         }
 
-        std::cout << std::endl;
+        std::cout << "\n";
     }
 
     std::cout << "\n\n" << setw(IOMANIP_WIDTH) << "Total population | "
               << testingExamples.size()
               << "\n"
               << "\n" << setw(IOMANIP_WIDTH) << "Accuracy | "
-              << globalAccuracy * 100 << " %" << std::endl;
+              << globalAccuracy * 100 << " %" << "\n";
 
 
 // Confusion matrices per class
     for (int k = 0; k < confusionPerClass.size(); k++)
     {
         std::cout << "\n\n\n";
-        std::cout << "> " << braces(testingClassLabels.at(k)) << std::endl;
+        std::cout << "> " << braces(testingClassLabels.at(k)) << "\n";
 
         for (int i = 0; i < confusionPerClass.at(k).rows(); i++)
         {
@@ -273,7 +282,7 @@ void printTestingResults(MultiLayerPerceptron const &multiLayerPerceptron,
                 std::cout << setw(20) << " "
                           << setw(8 + 5) << "[Positive]" << " "
                           << setw(8 + 5) << "[Negative]"
-                          << std::endl;
+                          << "\n";
             }
             std::cout << setw(20) << (i == 0 ? "[Positive]" : "[Negative]");
 
@@ -281,10 +290,10 @@ void printTestingResults(MultiLayerPerceptron const &multiLayerPerceptron,
                 std::cout
                         << setw(8 + 5) << confusionPerClass.at(k)(i, j)
                         << " ";
-            std::cout << std::endl;
+            std::cout << "\n";
         }
 
-        std::cout << std::endl;
+        std::cout << "\n";
 
 // Statistics
         int const totalPopulation = confusionPerClass.at(k).sum();
@@ -364,7 +373,7 @@ void printTestingResults(MultiLayerPerceptron const &multiLayerPerceptron,
                   << "\n"
                   << "\n" << setw(IOMANIP_WIDTH) << "Accuracy | "
                   << accuracy * 100 << " %"
-                  << std::endl;
+                  << "\n";
     }
 
     // Additional info to file
@@ -375,28 +384,28 @@ void printTestingResults(MultiLayerPerceptron const &multiLayerPerceptron,
         std::ofstream file(dirName + "/" + perceptronFilename
                            + ".information", std::ios::trunc);
 
-        file << "> [Global cost]: " << testingResults.globalCost << std::endl;
+        file << "> [Global cost]: " << testingResults.globalCost << "\n";
         for (auto const &i : testingResults.testingResultsPerExample)
         {
-            file << "\n\n\n>>>>>>>>>>>>>>>>>>>>>>" << std::endl;
+            file << "\n\n\n>>>>>>>>>>>>>>>>>>>>>>" << "\n";
 
             file << "> [Neurons]\n";
             for (auto const &j : i.neurons)
                 file << "\n"
-                     << j << std::endl;
+                     << j << "\n";
 
             file << "\n> [Targets]\n";
             file << "\n"
-                 << i.targets << std::endl;
+                 << i.targets << "\n";
 
             file << "\n> [Errors]\n";
             for (auto j = i.errors.crbegin(); j != i.errors.crend(); ++j)
                 file << "\n"
-                     << *j << std::endl;
+                     << *j << "\n";
 
             file << "\n> [Cost]\n";
             file << "\n"
-                 << i.cost << std::endl;
+                 << i.cost << "\n";
         }
     }
 }
@@ -446,7 +455,7 @@ int main()
                                         { 2, "Testing" }});
 
     std::string perceptronFilename;
-    std::cout << std::endl;
+    std::cout << "\n";
     std::cout << setw(IOMANIP_WIDTH) << "Multi-layer perceptron filename"
               << " | ";
     std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
@@ -478,7 +487,7 @@ int main()
                 (static_cast<int>(trainingExamples.at(0).inputs.size()));
 
         for (auto const &neurons : split(hiddenLayerNeuronNumber, " "))
-            layersNeurons.push_back(atoi(neurons.data()));
+            layersNeurons.push_back(std::stoi(neurons.data()));
 
         layersNeurons.push_back
                 (static_cast<int>(trainingExamples.at(0).outputs.size()));
