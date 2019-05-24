@@ -27,7 +27,7 @@ constexpr int IOMANIP_WIDTH = 40;
 
 std::vector<std::string_view> split
         (std::string_view stringView,
-         std::string_view delimiters = " ")
+         std::string_view delimiters)
 {
     std::vector<std::string_view> output;
 
@@ -507,7 +507,7 @@ int main()
         layersNeurons.push_back
                 (static_cast<int>(trainingExamples.at(0).inputs.size()));
 
-        for (auto const &neurons : split(hiddenLayerNeuronNumber))
+        for (auto const &neurons : split(hiddenLayerNeuronNumber, " "))
             layersNeurons.push_back(atoi(neurons.data()));
 
         layersNeurons.push_back
@@ -520,7 +520,7 @@ int main()
 
         std::vector<bool> biasesPerLayer;
 
-        for (auto const &bias : split(biases))
+        for (auto const &bias : split(biases, " "))
             biasesPerLayer.push_back((bool) atoi(bias.data()));
 
         if (biasesPerLayer.empty())
