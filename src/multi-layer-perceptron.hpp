@@ -79,9 +79,9 @@ namespace NeuralNetworks
                 (Archive &archive);
 
         //----------------------------------------------- | Helper functions <<<
-        std::vector<PerceptronLayer> createLayers
-                (std::vector<int> const &numberOfNeuronsPerLayer,
-                 std::vector<bool> enableBiasPerLayer = {}) const;
+//        std::vector<PerceptronLayer> createLayers
+//                (std::vector<int> const &numberOfNeuronsPerLayer,
+//                 std::vector<bool> enableBiasPerLayer = {}) const;
 
         std::vector<Eigen::VectorXd> feedForwardPerLayer
                 (Eigen::VectorXd const &inputs) const;

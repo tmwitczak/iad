@@ -8,6 +8,7 @@
 #include <random>
 #include <fstream>
 #include <sstream>
+#include <tuple>
 
 #include <cereal/types/vector.hpp>
 
@@ -51,6 +52,27 @@ namespace NeuralNetworks
         }
     }
 
+    std::vector<PerceptronLayer> createLayers
+            (std::vector<int> const &numberOfNeuronsPerLayer,
+             std::vector<bool> const &enableBiasPerLayer)
+    {
+        std::vector<PerceptronLayer> layers;
+
+        for (auto[numberOfNeurons, enableBias]
+             = std::make_tuple(numberOfNeuronsPerLayer.cbegin(),
+                               enableBiasPerLayer.cbegin());
+             numberOfNeurons != numberOfNeuronsPerLayer.cend() - 1;
+             ++numberOfNeurons, ++enableBias)
+        {
+            layers.emplace_back(*numberOfNeurons,
+                                *(numberOfNeurons + 1),
+                                Sigmoid {},
+                                *enableBias);
+        }
+
+        return layers;
+    }
+
     double getAccuracy
             (MultiLayerPerceptron const &multiLayerPerceptron,
              std::vector<TrainingExample> const
@@ -59,8 +81,7 @@ namespace NeuralNetworks
         int globalNumberOfAccurateClassifications = 0;
 
         MultiLayerPerceptron::TestingResults testingResults =
-                multiLayerPerceptron.test(
-                testingExamples);
+                multiLayerPerceptron.test(testingExamples);
 
         for (auto const &testingResultsPerExample
                 : testingResults.testingResultsPerExample)
@@ -427,31 +448,6 @@ namespace NeuralNetworks
     }
 
     //----------------------------------------------------- | Helper methods <<<
-    std::vector<PerceptronLayer> MultiLayerPerceptron::createLayers
-            (std::vector<int> const &numberOfNeuronsPerLayer,
-             std::vector<bool> enableBiasPerLayer) const
-    {
-        std::vector<PerceptronLayer> layers;
-
-//        if (enableBiasPerLayer.empty())
-//            enableBiasPerLayer = std::vector<bool>
-//                    (numberOfNeuronsPerLayer.size() - 1, true);
-        auto enableBias = enableBiasPerLayer.cbegin();
-
-        for (auto numberOfNeurons = numberOfNeuronsPerLayer.cbegin();
-             numberOfNeurons != numberOfNeuronsPerLayer.cend() - 1;
-             ++numberOfNeurons)
-        {
-            layers.emplace_back(*numberOfNeurons,
-                                *(numberOfNeurons + 1),
-                                Sigmoid {},
-                                *enableBias);
-            ++enableBias;
-        }
-
-        return layers;
-    }
-
     std::vector<Vector> MultiLayerPerceptron::feedForwardPerLayer
             (Vector const &inputs) const
     {
