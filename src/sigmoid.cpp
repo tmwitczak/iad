@@ -26,7 +26,7 @@ namespace NeuralNetworks
     Array Sigmoid::derivative
             (Array const &input) const
     {
-        Eigen::ArrayXd sigmoidOutput = (*this)(input);
+        Array sigmoidOutput = (*this)(input);
         return sigmoidOutput * (1.0 - sigmoidOutput);
     }
 

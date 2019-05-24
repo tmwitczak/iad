@@ -275,6 +275,7 @@ namespace NeuralNetworks
             {
                 trainingResults.costPerEpochInterval.emplace_back(costPerEpoch);
                 std::cout << "\r epoch: " << epoch;
+                std::cout.flush();
 
                 trainingResults.accuracyTraining
                         .emplace_back(getAccuracy(*this,

@@ -168,13 +168,13 @@ namespace NeuralNetworks
              Vector const &errors,
              Vector const &outputsDerivative)
     {
-        Vector derivative = (-errors.array()
-                             * outputsDerivative.array());
+        Vector derivative = -errors.array()
+                            * outputsDerivative.array();
 
-        deltaWeights -= (derivative * Eigen::RowVectorXd(inputs));
+        deltaWeights.noalias() -= derivative * inputs.transpose();
 
         if (isBiasEnabled)
-            deltaBiases -= (derivative);
+            deltaBiases.noalias() -= derivative;
 
         ++currentNumberOfSteps;
     }
@@ -241,23 +241,34 @@ namespace NeuralNetworks
             (double const learningCoefficient,
              double const momentumCoefficient)
     {
-        (momentumWeights *= momentumCoefficient)
-                += (learningCoefficient
-                    * (deltaWeights / currentNumberOfSteps));
+//        (momentumWeights *= momentumCoefficient)
+//                += (learningCoefficient
+//                    * (deltaWeights / currentNumberOfSteps));
+
+        momentumWeights.noalias()
+                = momentumCoefficient * momentumWeights
+                  + (learningCoefficient / currentNumberOfSteps)
+                    * deltaWeights;
+
+//        if (isBiasEnabled)
+//            (momentumBiases *= momentumCoefficient)
+//                    += (learningCoefficient
+//                        * (deltaBiases / currentNumberOfSteps));
 
         if (isBiasEnabled)
-            (momentumBiases *= momentumCoefficient)
-                    += (learningCoefficient
-                        * (deltaBiases / currentNumberOfSteps));
+            momentumBiases.noalias()
+                    = momentumCoefficient * momentumBiases
+                      + (learningCoefficient / currentNumberOfSteps)
+                        * deltaBiases;
     }
 
     void PerceptronLayer::applyMomentumStepToWeightsAndBiases
             ()
     {
-        weights += momentumWeights;
+        weights.noalias() += momentumWeights;
 
         if (isBiasEnabled)
-            biases += momentumBiases;
+            biases.noalias() += momentumBiases;
     }
 
     void PerceptronLayer::resetStepData
@@ -265,13 +276,13 @@ namespace NeuralNetworks
     {
         currentNumberOfSteps = 0;
 
-        deltaWeights = Matrix::Zero(numberOfOutputs(), numberOfInputs());
-        momentumWeights = Matrix::Zero(numberOfOutputs(), numberOfInputs());
+        deltaWeights.setZero();
+        momentumWeights.setZero();
 
         if (isBiasEnabled)
         {
-            deltaBiases = Vector::Zero(numberOfOutputs());
-            momentumBiases = Vector::Zero(numberOfOutputs());
+            deltaBiases.setZero();
+            momentumBiases.setZero();
         }
     }
 
