@@ -18,7 +18,8 @@ using namespace std;
 using namespace NeuralNetworks;
 using Vector = Eigen::VectorXd;
 
-constexpr int IOMANIP_WIDTH = 40;
+constexpr int IOMANIP_WIDTH = 38;
+
 
 std::list<std::string_view> split
         (std::string_view stringView,
@@ -175,16 +176,14 @@ std::string braces
     return "[" + str + "]";
 }
 
-void printTestingResults(MultiLayerPerceptron const &multiLayerPerceptron,
-                         std::vector<TrainingExample> const &testingExamples,
-                         std::vector<std::string> const &
-                         testingClassLabels,
-                         std::string const &testFilename,
-                         std::string const &perceptronFilename)
+template <typename TestingResults>
+void printAccuracy
+        (std::ostream &stream,
+         std::vector<TrainingExample> const &testingExamples,
+         std::vector<std::string> const &testingClassLabels,
+         std::string const &testFilename,
+         TestingResults const &testingResults)
 {
-    MultiLayerPerceptron::TestingResults testingResults
-            = multiLayerPerceptron.test(testingExamples);
-
     // Accuracy
     int globalNumberOfAccurateClassifications = 0;
     std::vector<int> accurateClassificationsPerClass
@@ -210,16 +209,16 @@ void printTestingResults(MultiLayerPerceptron const &multiLayerPerceptron,
 
         for (int i = 0; i < confusionPerClass.size(); i++)
         {
-// True positive
+            // True positive
             if (actualClass == i && predictedClass == i)
                 confusionPerClass.at(i)(0, 0)++;
-// True negative
+                // True negative
             else if (actualClass != i && predictedClass != i)
                 confusionPerClass.at(i)(1, 1)++;
-// False positive (type I error)
+                // False positive (type I error)
             else if (actualClass != i && predictedClass == i)
                 confusionPerClass.at(i)(0, 1)++;
-// False negative (type II error)
+                // False negative (type II error)
             else if (actualClass == i && predictedClass != i)
                 confusionPerClass.at(i)(1, 0)++;
         }
@@ -233,70 +232,70 @@ void printTestingResults(MultiLayerPerceptron const &multiLayerPerceptron,
     double globalAccuracy = (double) globalNumberOfAccurateClassifications
                             / testingExamples.size();
 
-    std::cout << "\n\n>> " << testFilename << "\n";
+    stream << "\n\n>> " << testFilename << "\n";
 
-    std::cout << "\n > Global confusion matrix: " << "\n";
+    stream << "\n > Global confusion matrix: " << "\n";
     for (int i = 0; i < confusionMatrix.rows(); i++)
     {
         if (i == 0)
         {
-            std::cout << setw(20) << " ";
+            stream << setw(20) << " ";
             for (auto const &testingClassLabel
                     : testingClassLabels)
-                std::cout
+                stream
                         << setw(braces(testingClassLabel)
                                         .length() + 5)
                         << braces(testingClassLabel) << " ";
-            std::cout << "\n";
+            stream << "\n";
         }
-        std::cout << setw(20)
-                  << braces(testingClassLabels.at(i));
+        stream << setw(20)
+               << braces(testingClassLabels.at(i));
 
         for (int j = 0; j < confusionMatrix.cols(); j++)
         {
-            std::cout
+            stream
                     << setw(braces(testingClassLabels.at(j))
                                     .length() + 5) << confusionMatrix(i, j)
                     << " ";
         }
 
-        std::cout << "\n";
+        stream << "\n";
     }
 
-    std::cout << "\n\n" << setw(IOMANIP_WIDTH) << "Total population | "
-              << testingExamples.size()
-              << "\n"
-              << "\n" << setw(IOMANIP_WIDTH) << "Accuracy | "
-              << globalAccuracy * 100 << " %" << "\n";
+    stream << "\n\n" << setw(IOMANIP_WIDTH) << "Total population | "
+           << testingExamples.size()
+           << "\n"
+           << "\n" << setw(IOMANIP_WIDTH) << "Accuracy | "
+           << globalAccuracy * 100 << " %" << "\n";
 
 
-// Confusion matrices per class
+    // Confusion matrices per class
     for (int k = 0; k < confusionPerClass.size(); k++)
     {
-        std::cout << "\n\n\n";
-        std::cout << "> " << braces(testingClassLabels.at(k)) << "\n";
+        stream << "\n\n\n";
+        stream << "> " << braces(testingClassLabels.at(k)) << "\n";
 
         for (int i = 0; i < confusionPerClass.at(k).rows(); i++)
         {
             if (i == 0)
             {
-                std::cout << setw(20) << " "
-                          << setw(8 + 5) << "[Positive]" << " "
-                          << setw(8 + 5) << "[Negative]"
-                          << "\n";
+                stream << setw(20) << " "
+                       << setw(8 + 5) << "[Positive]" << " "
+                       << setw(8 + 5) << "[Negative]"
+                       << "\n";
             }
-            std::cout << setw(20) << (i == 0 ? "[Positive]" : "[Negative]");
+            stream << setw(20) << (i == 0 ? "[Positive]" : "[Negative]");
 
             for (int j = 0; j < confusionPerClass.at(k).cols(); j++)
-                std::cout
+                stream
                         << setw(8 + 5) << confusionPerClass.at(k)(i, j)
                         << " ";
-            std::cout << "\n";
+            stream << "\n";
         }
 
-        std::cout << "\n";
+        stream << "\n";
 
-// Statistics
+        // Statistics
         int const totalPopulation = confusionPerClass.at(k).sum();
 
         int const &truePositive = confusionPerClass.at(k)(0, 0);
@@ -305,9 +304,9 @@ void printTestingResults(MultiLayerPerceptron const &multiLayerPerceptron,
         int const &falseNegative = confusionPerClass.at(k)(1, 0);
 
         int const predictedPositive = truePositive + falsePositive;
-        int const predictedNegative = falseNegative + trueNegative;
+        int const predictedNegative = trueNegative + falseNegative;
         int const actualPositive = truePositive + falseNegative;
-        int const actualNegative = falsePositive + trueNegative;
+        int const actualNegative = trueNegative + falsePositive;
 
         double const positivePredictiveValue
                 = double(truePositive) / predictedPositive;
@@ -321,69 +320,96 @@ void printTestingResults(MultiLayerPerceptron const &multiLayerPerceptron,
         double const truePositiveRate
                 = double(truePositive) / actualPositive;
         double const falsePositiveRate
-                = double(falsePositive) / actualPositive;
+                = double(falsePositive) / actualNegative;
         double const falseNegativeRate
-                = double(falseNegative) / actualNegative;
+                = double(falseNegative) / actualPositive;
         double const trueNegativeRate
                 = double(trueNegative) / actualNegative;
 
         double const accuracy
                 = double(truePositive + trueNegative) / totalPopulation;
 
-        std::cout << "\n" << setw(IOMANIP_WIDTH) << "Total population | " <<
-                  totalPopulation
-                  << "\n"
-                  << "\n" << setw(IOMANIP_WIDTH) << "True positive | "
-                  << truePositive
-                  << "\n" << setw(IOMANIP_WIDTH) << "True negative | "
-                  << trueNegative
-                  << "\n" << setw(IOMANIP_WIDTH)
-                  << "False positive (type I error) | " << falsePositive
-                  << "\n" << setw(IOMANIP_WIDTH)
-                  << "False negative (type II error) | " << falseNegative
-                  << "\n"
-                  << "\n" << setw(IOMANIP_WIDTH) << "Predicted positive | "
-                  << predictedPositive
-                  << "\n" << setw(IOMANIP_WIDTH) << "Predicted negative | "
-                  << predictedNegative
-                  << "\n" << setw(IOMANIP_WIDTH) << "Actual positive | "
-                  << actualPositive
-                  << "\n" << setw(IOMANIP_WIDTH) << "Actual negative | "
-                  << actualNegative
-                  << "\n"
-                  << "\n" << setw(IOMANIP_WIDTH)
-                  << "Positive predictive value | "
-                  << positivePredictiveValue * 100 << " %"
-                  << "\n" << setw(IOMANIP_WIDTH)
-                  << "False discovery rate | "
-                  << falseDiscoveryRate * 100 << " %"
-                  << "\n" << setw(IOMANIP_WIDTH) << "False omission rate | "
-                  << falseOmissionRate * 100 << " %"
-                  << "\n" << setw(IOMANIP_WIDTH)
-                  << "Negative prediction value | "
-                  << negativePredictiveValue * 100 << " %"
-                  << "\n"
-                  << "\n" << setw(IOMANIP_WIDTH) << "True positive rate | "
-                  << truePositiveRate * 100 << " %"
-                  << "\n" << setw(IOMANIP_WIDTH) << "False positive rate | "
-                  << falsePositiveRate * 100 << " %"
-                  << "\n" << setw(IOMANIP_WIDTH) << "False negative rate | "
-                  << falseNegativeRate * 100 << " %"
-                  << "\n" << setw(IOMANIP_WIDTH) << "True negative rate | "
-                  << trueNegativeRate * 100 << " %"
-                  << "\n"
-                  << "\n" << setw(IOMANIP_WIDTH) << "Accuracy | "
-                  << accuracy * 100 << " %"
-                  << "\n";
+        stream << "\n" << setw(IOMANIP_WIDTH) << "Total population | " <<
+               totalPopulation
+               << "\n"
+               << "\n" << setw(IOMANIP_WIDTH) << "True positive | "
+               << truePositive
+               << "\n" << setw(IOMANIP_WIDTH) << "True negative | "
+               << trueNegative
+               << "\n" << setw(IOMANIP_WIDTH)
+               << "False positive (type I error) | " << falsePositive
+               << "\n" << setw(IOMANIP_WIDTH)
+               << "False negative (type II error) | " << falseNegative
+               << "\n"
+               << "\n" << setw(IOMANIP_WIDTH) << "Predicted positive | "
+               << predictedPositive
+               << "\n" << setw(IOMANIP_WIDTH) << "Predicted negative | "
+               << predictedNegative
+               << "\n" << setw(IOMANIP_WIDTH) << "Actual positive | "
+               << actualPositive
+               << "\n" << setw(IOMANIP_WIDTH) << "Actual negative | "
+               << actualNegative
+               << "\n"
+               << "\n" << setw(IOMANIP_WIDTH)
+               << "Positive predictive value | "
+               << positivePredictiveValue * 100 << " %"
+               << "\n" << setw(IOMANIP_WIDTH)
+               << "Negative predictive value | "
+               << negativePredictiveValue * 100 << " %"
+               << "\n" << setw(IOMANIP_WIDTH) << "False omission rate | "
+               << falseOmissionRate * 100 << " %"
+               << "\n" << setw(IOMANIP_WIDTH)
+               << "False discovery rate | "
+               << falseDiscoveryRate * 100 << " %"
+               << "\n"
+               << "\n" << setw(IOMANIP_WIDTH) << "True positive rate | "
+               << truePositiveRate * 100 << " %"
+               << "\n" << setw(IOMANIP_WIDTH) << "False positive rate | "
+               << falsePositiveRate * 100 << " %"
+               << "\n" << setw(IOMANIP_WIDTH) << "False negative rate | "
+               << falseNegativeRate * 100 << " %"
+               << "\n" << setw(IOMANIP_WIDTH) << "True negative rate | "
+               << trueNegativeRate * 100 << " %"
+               << "\n"
+               << "\n" << setw(IOMANIP_WIDTH) << "Accuracy | "
+               << accuracy * 100 << " %"
+               << std::endl;
+    }
+}
+
+void printTestingResults
+        (MultiLayerPerceptron const &multiLayerPerceptron,
+         std::vector<TrainingExample> const &testingExamples,
+         std::vector<std::string> const &testingClassLabels,
+         std::string const &testFilename,
+         std::string const &perceptronFilename,
+         bool const additionalTestingDump)
+{
+    MultiLayerPerceptron::TestingResults testingResults
+            = multiLayerPerceptron.test(testingExamples);
+
+    std::cout << "\r" << std::string(80, ' ');
+
+    printAccuracy(std::cout, testingExamples, testingClassLabels,
+                  testFilename, testingResults);
+
+    std::string dirName = "testing-results_" + perceptronFilename;
+    {
+        std::ofstream file(dirName + "/" + perceptronFilename
+                           + ".analysis", std::ios::out | std::ios::trunc);
+        //system(("rmdir \"" + dirName + "\" /s /q").data());
+        system(("if not exist \"" + dirName + "\" mkdir \"" + dirName + "\"")
+                       .data());
+        printAccuracy(file, testingExamples, testingClassLabels,
+                      testFilename, testingResults);
     }
 
     // Additional info to file
+    if (additionalTestingDump)
     {
-        std::string dirName = "testing-results_" + perceptronFilename;
-        system(("rmdir \"" + dirName + "\" /s /q").data());
-        system(("mkdir \"" + dirName + "\"").data());
         std::ofstream file(dirName + "/" + perceptronFilename
-                           + ".information", std::ios::trunc);
+                           + ".information",
+                           std::ios::out | std::ios::trunc);
 
         file << "> [Global cost]: " << testingResults.globalCost << "\n";
         for (auto const &i : testingResults.testingResultsPerExample)
@@ -416,210 +442,45 @@ void printTestingResults(KNearestNeighbours const &kNearestNeighbours,
                          std::vector<std::string> const &
                          testingClassLabels,
                          std::string const &testFilename,
-                         std::string const &neighboursFilename)
+                         std::string const &neighboursFilename,
+                         bool const additionalTestingDump)
 {
     KNearestNeighbours::TestingResults testingResults
             = kNearestNeighbours.test(testingExamples);
 
-    // Accuracy
-    int globalNumberOfAccurateClassifications = 0;
-    std::vector<int> accurateClassificationsPerClass
-            (testingClassLabels.size(), 0);
-    std::vector<int> classCount
-            (testingClassLabels.size(), 0);
+    std::cout << "\r" << std::string(80, ' ');
 
-    Eigen::MatrixXd confusionMatrix = Eigen::MatrixXd::Zero
-            (testingClassLabels.size(),
-             testingClassLabels.size());
-    std::vector<Eigen::MatrixXd> confusionPerClass
-            (testingClassLabels.size(), Eigen::MatrixXd::Zero(2, 2));
+//    MultiLayerPerceptron::TestingResults convertedTestingResults;
+//    convertedTestingResults.globalCost = testingResults.globalCost;
+//    for (auto const &i : testingResults.testingResultsPerExample)
+//    {
+//        convertedTestingResults
+//                .testingResultsPerExample
+//                .push_back({ i.neurons,
+//                             i.targets,
+//                             { i.errors },
+//                             i.cost });
+//    }
 
-    for (auto const &testingResultsPerExample
-            : testingResults.testingResultsPerExample)
+    printAccuracy(std::cout, testingExamples, testingClassLabels,
+                  testFilename, testingResults);
+
+    std::string dirName = "testing-results_" + neighboursFilename;
     {
-        Vector::Index predictedClass, actualClass;
-        testingResultsPerExample.neurons
-                .back().array().maxCoeff(&predictedClass);
-        testingResultsPerExample.targets.array().maxCoeff(&actualClass);
-
-        confusionMatrix(predictedClass, actualClass)++;
-
-        for (int i = 0; i < confusionPerClass.size(); i++)
-        {
-// True positive
-            if (actualClass == i && predictedClass == i)
-                confusionPerClass.at(i)(0, 0)++;
-// True negative
-            else if (actualClass != i && predictedClass != i)
-                confusionPerClass.at(i)(1, 1)++;
-// False positive (type I error)
-            else if (actualClass != i && predictedClass == i)
-                confusionPerClass.at(i)(0, 1)++;
-// False negative (type II error)
-            else if (actualClass == i && predictedClass != i)
-                confusionPerClass.at(i)(1, 0)++;
-        }
-
-        globalNumberOfAccurateClassifications
-                += (int) (predictedClass == actualClass);
-        accurateClassificationsPerClass.at((int) actualClass)
-                += (int) (predictedClass == actualClass);
-        classCount.at((int) actualClass)++;
-    }
-    double globalAccuracy = (double) globalNumberOfAccurateClassifications
-                            / testingExamples.size();
-
-    std::cout << "\n\n>> " << testFilename << "\n";
-
-    std::cout << "\n > Global confusion matrix: " << "\n";
-    for (int i = 0; i < confusionMatrix.rows(); i++)
-    {
-        if (i == 0)
-        {
-            std::cout << setw(20) << " ";
-            for (auto const &testingClassLabel
-                    : testingClassLabels)
-                std::cout
-                        << setw(braces(testingClassLabel)
-                                        .length() + 5)
-                        << braces(testingClassLabel) << " ";
-            std::cout << "\n";
-        }
-        std::cout << setw(20)
-                  << braces(testingClassLabels.at(i));
-
-        for (int j = 0; j < confusionMatrix.cols(); j++)
-        {
-            std::cout
-                    << setw(braces(testingClassLabels.at(j))
-                                    .length() + 5) << confusionMatrix(i, j)
-                    << " ";
-        }
-
-        std::cout << "\n";
-    }
-
-    std::cout << "\n\n" << setw(IOMANIP_WIDTH) << "Total population | "
-              << testingExamples.size()
-              << "\n"
-              << "\n" << setw(IOMANIP_WIDTH) << "Accuracy | "
-              << globalAccuracy * 100 << " %" << "\n";
-
-
-// Confusion matrices per class
-    for (int k = 0; k < confusionPerClass.size(); k++)
-    {
-        std::cout << "\n\n\n";
-        std::cout << "> " << braces(testingClassLabels.at(k)) << "\n";
-
-        for (int i = 0; i < confusionPerClass.at(k).rows(); i++)
-        {
-            if (i == 0)
-            {
-                std::cout << setw(20) << " "
-                          << setw(8 + 5) << "[Positive]" << " "
-                          << setw(8 + 5) << "[Negative]"
-                          << "\n";
-            }
-            std::cout << setw(20) << (i == 0 ? "[Positive]" : "[Negative]");
-
-            for (int j = 0; j < confusionPerClass.at(k).cols(); j++)
-                std::cout
-                        << setw(8 + 5) << confusionPerClass.at(k)(i, j)
-                        << " ";
-            std::cout << "\n";
-        }
-
-        std::cout << "\n";
-
-// Statistics
-        int const totalPopulation = confusionPerClass.at(k).sum();
-
-        int const &truePositive = confusionPerClass.at(k)(0, 0);
-        int const &trueNegative = confusionPerClass.at(k)(1, 1);
-        int const &falsePositive = confusionPerClass.at(k)(0, 1);
-        int const &falseNegative = confusionPerClass.at(k)(1, 0);
-
-        int const predictedPositive = truePositive + falsePositive;
-        int const predictedNegative = falseNegative + trueNegative;
-        int const actualPositive = truePositive + falseNegative;
-        int const actualNegative = falsePositive + trueNegative;
-
-        double const positivePredictiveValue
-                = double(truePositive) / predictedPositive;
-        double const falseDiscoveryRate
-                = double(falsePositive) / predictedPositive;
-        double const falseOmissionRate
-                = double(falseNegative) / predictedNegative;
-        double const negativePredictiveValue
-                = double(trueNegative) / predictedNegative;
-
-        double const truePositiveRate
-                = double(truePositive) / actualPositive;
-        double const falsePositiveRate
-                = double(falsePositive) / actualPositive;
-        double const falseNegativeRate
-                = double(falseNegative) / actualNegative;
-        double const trueNegativeRate
-                = double(trueNegative) / actualNegative;
-
-        double const accuracy
-                = double(truePositive + trueNegative) / totalPopulation;
-
-        std::cout << "\n" << setw(IOMANIP_WIDTH) << "Total population | " <<
-                  totalPopulation
-                  << "\n"
-                  << "\n" << setw(IOMANIP_WIDTH) << "True positive | "
-                  << truePositive
-                  << "\n" << setw(IOMANIP_WIDTH) << "True negative | "
-                  << trueNegative
-                  << "\n" << setw(IOMANIP_WIDTH)
-                  << "False positive (type I error) | " << falsePositive
-                  << "\n" << setw(IOMANIP_WIDTH)
-                  << "False negative (type II error) | " << falseNegative
-                  << "\n"
-                  << "\n" << setw(IOMANIP_WIDTH) << "Predicted positive | "
-                  << predictedPositive
-                  << "\n" << setw(IOMANIP_WIDTH) << "Predicted negative | "
-                  << predictedNegative
-                  << "\n" << setw(IOMANIP_WIDTH) << "Actual positive | "
-                  << actualPositive
-                  << "\n" << setw(IOMANIP_WIDTH) << "Actual negative | "
-                  << actualNegative
-                  << "\n"
-                  << "\n" << setw(IOMANIP_WIDTH)
-                  << "Positive predictive value | "
-                  << positivePredictiveValue * 100 << " %"
-                  << "\n" << setw(IOMANIP_WIDTH)
-                  << "False discovery rate | "
-                  << falseDiscoveryRate * 100 << " %"
-                  << "\n" << setw(IOMANIP_WIDTH) << "False omission rate | "
-                  << falseOmissionRate * 100 << " %"
-                  << "\n" << setw(IOMANIP_WIDTH)
-                  << "Negative prediction value | "
-                  << negativePredictiveValue * 100 << " %"
-                  << "\n"
-                  << "\n" << setw(IOMANIP_WIDTH) << "True positive rate | "
-                  << truePositiveRate * 100 << " %"
-                  << "\n" << setw(IOMANIP_WIDTH) << "False positive rate | "
-                  << falsePositiveRate * 100 << " %"
-                  << "\n" << setw(IOMANIP_WIDTH) << "False negative rate | "
-                  << falseNegativeRate * 100 << " %"
-                  << "\n" << setw(IOMANIP_WIDTH) << "True negative rate | "
-                  << trueNegativeRate * 100 << " %"
-                  << "\n"
-                  << "\n" << setw(IOMANIP_WIDTH) << "Accuracy | "
-                  << accuracy * 100 << " %"
-                  << "\n";
+        std::ofstream file(dirName + "/" + neighboursFilename
+                           + ".analysis", std::ios::out | std::ios::trunc);
+        //system(("rmdir \"" + dirName + "\" /s /q").data());
+        system(("if not exist \"" + dirName + "\" mkdir \"" + dirName + "\"")
+                       .data());
+        printAccuracy(file, testingExamples, testingClassLabels,
+                      testFilename, testingResults);
     }
 
     // Additional info to file
+    if (additionalTestingDump)
     {
-        std::string dirName = "testing-results_" + neighboursFilename;
-        system(("rmdir \"" + dirName + "\" /s /q").data());
-        system(("mkdir \"" + dirName + "\"").data());
         std::ofstream file(dirName + "/" + neighboursFilename
-                           + ".information", std::ios::trunc);
+                           + ".information", std::ios::out | std::ios::trunc);
 
         file << "> [Global cost]: " << testingResults.globalCost << "\n";
         for (auto const &i : testingResults.testingResultsPerExample)
@@ -649,17 +510,21 @@ void printTestingResults(KNearestNeighbours const &kNearestNeighbours,
 ////////////////////////////////////////////////////////////// | Project: iad-2a
 int main()
 {
+    std::cout << std::string(79, '/') << std::endl;
     std::string dataSet = askUserForInput("Choose data set",
-                                          {{ 1, "Identity" },
-                                           { 2, "Iris" },
-                                           { 3, "Iris (normalised)" },
-                                           { 4, "Iris (standardised)" },
-                                           { 5, "Seeds" },
-                                           { 6, "Seeds (normalised)" },
-                                           { 7, "Seeds (standardised)" },
-                                           { 8, "Digits" },
-                                           { 9, "Digits (normalised)" }});
+                                          {{ 1,  "Identity" },
+                                           { 2,  "Iris" },
+                                           { 3,  "Iris (normalised)" },
+                                           { 4,  "Iris (standardised)" },
+                                           { 5,  "Seeds" },
+                                           { 6,  "Seeds (normalised)" },
+                                           { 7,  "Seeds (standardised)" },
+                                           { 8,  "Digits" },
+                                           { 9,  "Digits (normalised)" },
+                                           { 10, "Digits (HOG)" }});
 
+    std::cout << "\n";
+    std::cout << std::string(79, '-') << std::endl;
     std::string classifier = askUserForInput("Choose classifier",
                                              {{ 1, "Multi-layer perceptron" },
                                               { 2, "K-nearest neighbours" }});
@@ -673,7 +538,8 @@ int main()
              { "Seeds (normalised)",   "./data/seeds-normalised-train.csv" },
              { "Seeds (standardised)", "./data/seeds-standardised-train.csv" },
              { "Digits",               "./data/digits-train.csv" },
-             { "Digits (normalised)",  "./data/digits-normalised-train.csv" }};
+             { "Digits (normalised)",  "./data/digits-normalised-train.csv" },
+             { "Digits (HOG)",         "./data/digits-hog-train.csv" }};
 
     std::map<std::string, std::string> dataSetTestingFilenames
             {{ "Identity",             "./data/identity-test.csv" },
@@ -684,12 +550,14 @@ int main()
              { "Seeds (normalised)",   "./data/seeds-normalised-test.csv" },
              { "Seeds (standardised)", "./data/seeds-standardised-test.csv" },
              { "Digits",               "./data/digits-test.csv" },
-             { "Digits (normalised)",  "./data/digits-normalised-test.csv" }};
+             { "Digits (normalised)",  "./data/digits-normalised-test.csv" },
+             { "Digits (HOG)",         "./data/digits-hog-test.csv" }};
 
 
     if (classifier == "Multi-layer perceptron")
     {
-        std::cout << endl;
+        std::cout << std::endl;
+        std::cout << std::string(79, '-') << std::endl;
         std::string mode = askUserForInput("Choose mode",
                                            {{ 1, "Training" },
                                             { 2, "Testing" }});
@@ -836,11 +704,11 @@ int main()
             printTestingResults(multiLayerPerceptron,
                                 trainingExamples, trainingClassLabels,
                                 dataSetTrainingFilenames[dataSet],
-                                perceptronFilename);
+                                perceptronFilename, false);
             printTestingResults(multiLayerPerceptron,
                                 testingExamples, testingClassLabels,
                                 dataSetTestingFilenames[dataSet],
-                                perceptronFilename);
+                                perceptronFilename, true);
         }
     }
     else if (classifier == "K-nearest neighbours")
@@ -855,11 +723,12 @@ int main()
                 (dataSetTestingFilenames[dataSet]);
 
         std::string neighboursFilename;
-        std::cout << "\n";
+        std::cout << std::string(60, ' ') << std::endl;
+        std::cout << std::string(79, '-') << std::endl;
         std::cout << setw(IOMANIP_WIDTH) << "K-nearest neighbours filename"
                   << " | ";
-        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-        std::getline(cin, neighboursFilename);
+        //std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+        std::getline(std::cin, neighboursFilename);
 
         int k;
         std::cout << setw(IOMANIP_WIDTH) << "K" << " | ";
@@ -875,11 +744,11 @@ int main()
         printTestingResults(kNearestNeigbours,
                             testingExamples, testingClassLabels,
                             dataSetTestingFilenames[dataSet],
-                            neighboursFilename);
+                            neighboursFilename, false);
 
     }
 
     std::cout << "\n\n";
-    system("pause");
+    std::cout << std::string(79, '/') << std::endl;
     return 0;
 }
