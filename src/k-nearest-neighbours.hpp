@@ -24,29 +24,30 @@ namespace NeuralNetworks
                 (std::vector<TrainingExample> const &testingExamples) const;
 
 
-
     private:
         int const k;
         std::vector<TrainingExample> const examples;
+        std::vector<std::pair<double, TrainingExample const *>>
+        mutable distances;
     };
 
-        //------------------------------------------ | Structure: TestingResults <<<
-        struct KNearestNeighbours::TestingResults
-        {
-            double globalCost;
-            std::vector<TestingResultsPerExample> testingResultsPerExample;
-        };
+    //------------------------------------------ | Structure: TestingResults <<<
+    struct KNearestNeighbours::TestingResults
+    {
+        double globalCost;
+        std::vector<TestingResultsPerExample> testingResultsPerExample;
+    };
 
-        //-------------------------------- | Structure: TestingResultsPerExample <<<
-        struct KNearestNeighbours::TestingResultsPerExample
-        {
-            std::vector<Eigen::VectorXd> neurons;
-            Eigen::VectorXd targets;
-            Eigen::VectorXd errors;
-            double cost;
-        };
+    //-------------------------------- | Structure: TestingResultsPerExample <<<
+    struct KNearestNeighbours::TestingResultsPerExample
+    {
+        std::vector<Eigen::VectorXd> neurons;
+        Eigen::VectorXd targets;
+        Eigen::VectorXd errors;
+        double cost;
+    };
 
-    }
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 #endif // IAD_2A_K_NEAREST_NEIGHBOURS_HPP

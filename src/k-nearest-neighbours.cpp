@@ -16,48 +16,48 @@ namespace NeuralNetworks
              std::vector<TrainingExample> const &examples)
             :
             k { k },
-            examples { examples }
+            examples { examples },
+            distances { examples.size() }
     {
     }
+
+    using iksde = std::pair<double, TrainingExample const *>;
 
     Vector KNearestNeighbours::operator()
             (Vector const &inputs) const
     {
-        // Compute distances
-        std::vector
-                <std::pair
-                        <double, std::reference_wrapper<TrainingExample const>>>
-                distances(examples.size(),
-                          std::make_pair(0.0, std::cref(examples.at(0))));
-
-        for (auto[example, distance] = std::make_tuple(examples.cbegin(),
-                                                       distances.begin());
-             example != examples.cend();
-             ++example, ++distance)
-        {
-            distance->first = (example->inputs - inputs).norm();
-            distance->second = std::cref(*example);
-        }
-
-        // Sort distances
-        using iksde = std::pair<double,
-                std::reference_wrapper<TrainingExample const>>;
         static auto const comparator
                 = [](iksde const &a, iksde const &b) -> bool
                 {
                     return a.first < b.first;
                 };
+
+        // Compute distances
+        for (auto[example, distance, examplesCEnd]
+             = std::make_tuple(examples.cbegin(),
+                               distances.begin(),
+                               examples.cend());
+             example != examplesCEnd;
+             ++example, ++distance)
+        {
+            distance->first = (example->inputs - inputs).norm();
+            distance->second = &(*example);
+        }
+
+        // Sort distances
         std::sort(distances.begin(),
                   distances.end(),
                   comparator);
 
         // Average the outputs
-        Vector sumOfKTargets { distances.cbegin()->second.get().outputs };
-        for (auto[i, distance]= std::make_tuple(0,
+        Vector sumOfKTargets { distances.cbegin()->second->outputs };
+        for (auto[i, distance]= std::make_tuple(k,
                                                 distances.cbegin() + 1);
-             i < k && i < distances.size();
-             ++i, ++distance)
-            sumOfKTargets.noalias() += distance->second.get().outputs;
+             i--;
+             ++distance)
+        {
+            sumOfKTargets.noalias() += distance->second->outputs;
+        }
 
         return sumOfKTargets / k;
     }
