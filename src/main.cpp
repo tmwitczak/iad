@@ -329,48 +329,32 @@ void printAccuracy
         double const accuracy
                 = double(truePositive + trueNegative) / totalPopulation;
 
-        stream << "\n" << setw(IOMANIP_WIDTH) << "Total population | " <<
-               totalPopulation
-               << "\n"
-               << "\n" << setw(IOMANIP_WIDTH) << "True positive | "
-               << truePositive
-               << "\n" << setw(IOMANIP_WIDTH) << "True negative | "
-               << trueNegative
-               << "\n" << setw(IOMANIP_WIDTH)
-               << "False positive (type I error) | " << falsePositive
-               << "\n" << setw(IOMANIP_WIDTH)
-               << "False negative (type II error) | " << falseNegative
-               << "\n"
-               << "\n" << setw(IOMANIP_WIDTH) << "Predicted positive | "
-               << predictedPositive
-               << "\n" << setw(IOMANIP_WIDTH) << "Predicted negative | "
-               << predictedNegative
-               << "\n" << setw(IOMANIP_WIDTH) << "Actual positive | "
-               << actualPositive
-               << "\n" << setw(IOMANIP_WIDTH) << "Actual negative | "
-               << actualNegative
-               << "\n"
-               << "\n" << setw(IOMANIP_WIDTH)
-               << "Positive predictive value | "
-               << positivePredictiveValue * 100 << " %"
-               << "\n" << setw(IOMANIP_WIDTH)
-               << "Negative predictive value | "
-               << negativePredictiveValue * 100 << " %"
-               << "\n" << setw(IOMANIP_WIDTH) << "False omission rate | "
-               << falseOmissionRate * 100 << " %"
-               << "\n" << setw(IOMANIP_WIDTH)
-               << "False discovery rate | "
-               << falseDiscoveryRate * 100 << " %"
-               << "\n"
-               << "\n" << setw(IOMANIP_WIDTH) << "True positive rate | "
-               << truePositiveRate * 100 << " %"
-               << "\n" << setw(IOMANIP_WIDTH) << "False positive rate | "
-               << falsePositiveRate * 100 << " %"
-               << "\n" << setw(IOMANIP_WIDTH) << "False negative rate | "
-               << falseNegativeRate * 100 << " %"
-               << "\n" << setw(IOMANIP_WIDTH) << "True negative rate | "
-               << trueNegativeRate * 100 << " %"
-               << "\n"
+        stream << "\n" << setw(IOMANIP_WIDTH)
+               << "Total population | " << totalPopulation;
+        stream << "\n";
+        stream << "\n" << setw(IOMANIP_WIDTH)
+               << "True positive | " << truePositive;
+        stream << "\n" << setw(IOMANIP_WIDTH)
+               << "True negative | " << trueNegative;
+        stream << "\n" << setw(IOMANIP_WIDTH)
+               << "False positive (type I error) | " << falsePositive;
+        stream << "\n" << setw(IOMANIP_WIDTH)
+               << "False negative (type II error) | " << falseNegative;
+        stream << "\n";
+        stream << "\n" << setw(IOMANIP_WIDTH)
+               << "Correct positive predictions | "
+               << positivePredictiveValue * 100 << " %";
+        stream << "\n" << setw(IOMANIP_WIDTH)
+               << "Correct negative predictions | "
+               << negativePredictiveValue * 100 << " %";
+        stream << "\n";
+        stream << "\n" << setw(IOMANIP_WIDTH)
+               << "Correct positive classifications | "
+               << truePositiveRate * 100 << " %";
+        stream << "\n" << setw(IOMANIP_WIDTH)
+               << "Correct negative classifications | "
+               << trueNegativeRate * 100 << " %";
+        stream << "\n"
                << "\n" << setw(IOMANIP_WIDTH) << "Accuracy | "
                << accuracy * 100 << " %"
                << std::endl;
