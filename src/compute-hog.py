@@ -204,7 +204,7 @@ def main(
         feature_vector = feature.hog(vector,
                                      orientations = orientations,
                                      pixels_per_cell = (7, 7),
-                                     cells_per_block = (2, 2),
+                                     cells_per_block = (3, 3),
                                      transform_sqrt = True,
                                      feature_vector = True)
         feature_vector = feature_vector.flatten()
