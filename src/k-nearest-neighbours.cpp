@@ -51,7 +51,7 @@ namespace NeuralNetworks
 
         // Average the outputs
         Vector sumOfKTargets { distances.cbegin()->second->outputs };
-        for (auto[i, distance]= std::make_tuple(k,
+        for (auto[i, distance]= std::make_tuple(k - 1,
                                                 distances.cbegin() + 1);
              i--;
              ++distance)
