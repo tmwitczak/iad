@@ -127,9 +127,9 @@ std::string askUserForInput
     for (auto const &option
             : options)
         std::cout << setw(IOMANIP_WIDTH)
-                  << option.first << " | " << option.second << "\n";
+                  << option.first << " " << '|' << " " << option.second << "\n";
 
-    std::cout << setw(IOMANIP_WIDTH) << question << " | ";
+    std::cout << setw(IOMANIP_WIDTH) << question << " " << '|' << " ";
     int userInput;
     std::cin >> userInput;
 
@@ -232,7 +232,7 @@ void printAccuracy
     double globalAccuracy = (double) globalNumberOfAccurateClassifications
                             / testingExamples.size();
 
-    stream << "\n\n>> " << testFilename << "\n";
+    stream << ">> " << testFilename << "\n";
 
     stream << "\n > Global confusion matrix: " << "\n";
     for (int i = 0; i < confusionMatrix.rows(); i++)
@@ -262,10 +262,10 @@ void printAccuracy
         stream << "\n";
     }
 
-    stream << "\n\n" << setw(IOMANIP_WIDTH) << "Total population | "
+    stream << "\n\n" << setw(IOMANIP_WIDTH) << "Total population " << " " << '|' << " "
            << testingExamples.size()
            << "\n"
-           << "\n" << setw(IOMANIP_WIDTH) << "Accuracy | "
+           << "\n" << setw(IOMANIP_WIDTH) << "Accuracy " << " " << '|' << " "
            << globalAccuracy * 100 << " %" << "\n";
 
 
@@ -330,32 +330,32 @@ void printAccuracy
                 = double(truePositive + trueNegative) / totalPopulation;
 
         stream << "\n" << setw(IOMANIP_WIDTH)
-               << "Total population | " << totalPopulation;
+               << "Total population " << '|' << " " << totalPopulation;
         stream << "\n";
         stream << "\n" << setw(IOMANIP_WIDTH)
-               << "True positive | " << truePositive;
+               << "True positive " << '|' << " " << truePositive;
         stream << "\n" << setw(IOMANIP_WIDTH)
-               << "True negative | " << trueNegative;
+               << "True negative " << '|' << " " << trueNegative;
         stream << "\n" << setw(IOMANIP_WIDTH)
-               << "False positive (type I error) | " << falsePositive;
+               << "False positive (type I error) " << '|' << " " << falsePositive;
         stream << "\n" << setw(IOMANIP_WIDTH)
-               << "False negative (type II error) | " << falseNegative;
+               << "False negative (type II error) " << '|' << " " << falseNegative;
         stream << "\n";
         stream << "\n" << setw(IOMANIP_WIDTH)
-               << "Correct positive predictions | "
+               << "Correct positive predictions " << '|' << " "
                << positivePredictiveValue * 100 << " %";
         stream << "\n" << setw(IOMANIP_WIDTH)
-               << "Correct negative predictions | "
+               << "Correct negative predictions " << '|' << " "
                << negativePredictiveValue * 100 << " %";
         stream << "\n";
         stream << "\n" << setw(IOMANIP_WIDTH)
-               << "Correct positive classifications | "
+               << "Correct positive classifications " << '|' << " "
                << truePositiveRate * 100 << " %";
         stream << "\n" << setw(IOMANIP_WIDTH)
-               << "Correct negative classifications | "
+               << "Correct negative classifications " << '|' << " "
                << trueNegativeRate * 100 << " %";
         stream << "\n"
-               << "\n" << setw(IOMANIP_WIDTH) << "Accuracy | "
+               << "\n" << setw(IOMANIP_WIDTH) << "Accuracy " << '|' << " "
                << accuracy * 100 << " %"
                << std::endl;
     }
@@ -372,18 +372,18 @@ void printTestingResults
     MultiLayerPerceptron::TestingResults testingResults
             = multiLayerPerceptron.test(testingExamples);
 
-    std::cout << "\r" << std::string(80, ' ');
+    std::cout << "\r" << std::string(80, ' ') << "\r";
 
     printAccuracy(std::cout, testingExamples, testingClassLabels,
                   testFilename, testingResults);
 
     std::string dirName = "testing-results_" + perceptronFilename;
     {
-        std::ofstream file(dirName + "/" + perceptronFilename
-                           + ".analysis", std::ios::out | std::ios::trunc);
         //system(("rmdir \"" + dirName + "\" /s /q").data());
         system(("if not exist \"" + dirName + "\" mkdir \"" + dirName + "\"")
                        .data());
+        std::ofstream file(dirName + "/" + perceptronFilename
+                           + ".analysis", std::ios::out | std::ios::trunc);
         printAccuracy(file, testingExamples, testingClassLabels,
                       testFilename, testingResults);
     }
@@ -432,7 +432,7 @@ void printTestingResults(KNearestNeighbours const &kNearestNeighbours,
     KNearestNeighbours::TestingResults testingResults
             = kNearestNeighbours.test(testingExamples);
 
-    std::cout << "\r" << std::string(80, ' ');
+    std::cout << "\r" << std::string(80, ' ') << "\r";
 
 //    MultiLayerPerceptron::TestingResults convertedTestingResults;
 //    convertedTestingResults.globalCost = testingResults.globalCost;
@@ -451,11 +451,11 @@ void printTestingResults(KNearestNeighbours const &kNearestNeighbours,
 
     std::string dirName = "testing-results_" + neighboursFilename;
     {
-        std::ofstream file(dirName + "/" + neighboursFilename
-                           + ".analysis", std::ios::out | std::ios::trunc);
         //system(("rmdir \"" + dirName + "\" /s /q").data());
         system(("if not exist \"" + dirName + "\" mkdir \"" + dirName + "\"")
                        .data());
+        std::ofstream file(dirName + "/" + neighboursFilename
+                           + ".analysis", std::ios::out | std::ios::trunc);
         printAccuracy(file, testingExamples, testingClassLabels,
                       testFilename, testingResults);
     }
@@ -548,8 +548,9 @@ int main()
 
         std::string perceptronFilename;
         std::cout << "\n";
+        std::cout << std::string(79, '-') << std::endl;
         std::cout << setw(IOMANIP_WIDTH) << "Multi-layer perceptron filename"
-                  << " | ";
+                  << '|' << " ";
         std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
         std::getline(cin, perceptronFilename);
 
@@ -572,7 +573,7 @@ int main()
             // Neuron number
             std::string hiddenLayerNeuronNumber;
             std::cout << setw(IOMANIP_WIDTH) << "Neurons in hidden layers"
-                      << " | ";
+                      << '|' << " ";
             std::getline(std::cin, hiddenLayerNeuronNumber);
 
             std::vector<int> layersNeurons;
@@ -588,7 +589,7 @@ int main()
             // Biases
             std::string biases;
             std::cout << setw(IOMANIP_WIDTH) << "Enable biases per layer"
-                      << " | ";
+                      << '|' << " ";
             std::getline(std::cin, biases);
 
             std::vector<bool> biasesPerLayer;
@@ -613,22 +614,22 @@ int main()
             bool shuffleTrainingData;
             int epochInterval;
 
-            std::cout << setw(IOMANIP_WIDTH) << "Number of epochs" << " | ";
+            std::cout << setw(IOMANIP_WIDTH) << "Number of epochs" << " " << '|' << " ";
             std::cin >> numberOfEpochs;
-            std::cout << setw(IOMANIP_WIDTH) << "Cost goal" << " | ";
+            std::cout << setw(IOMANIP_WIDTH) << "Cost goal" << " " << '|' << " ";
             std::cin >> costGoal;
             std::cout << setw(IOMANIP_WIDTH) << "Learning coefficient (start)"
-                      << " | ";
+                      << " " << '|' << " ";
             std::cin >> learningCoefficientStart;
             std::cout << setw(IOMANIP_WIDTH) << "Learning coefficient (end)"
-                      << " | ";
+                      << " " << '|' << " ";
             std::cin >> learningCoefficientEnd;
-            std::cout << setw(IOMANIP_WIDTH) << "Momentum coefficient" << " | ";
+            std::cout << setw(IOMANIP_WIDTH) << "Momentum coefficient" << " " << '|' << " ";
             std::cin >> momentumCoefficient;
             std::cout << setw(IOMANIP_WIDTH) << "Shuffle training data"
-                      << " | ";
+                      << " " << '|' << " ";
             std::cin >> shuffleTrainingData;
-            std::cout << setw(IOMANIP_WIDTH) << "Epoch interval" << " | ";
+            std::cout << setw(IOMANIP_WIDTH) << "Epoch interval" << " " << '|' << " ";
             std::cin >> epochInterval;
 
             // Train
@@ -685,10 +686,13 @@ int main()
         {
             MultiLayerPerceptron multiLayerPerceptron(perceptronFilename);
 
+            std::cout << "\n" << std::string(79, '-') << std::endl;
             printTestingResults(multiLayerPerceptron,
                                 trainingExamples, trainingClassLabels,
                                 dataSetTrainingFilenames[dataSet],
                                 perceptronFilename, false);
+
+            std::cout << "\n" << std::string(79, '-') << std::endl;
             printTestingResults(multiLayerPerceptron,
                                 testingExamples, testingClassLabels,
                                 dataSetTestingFilenames[dataSet],
@@ -710,12 +714,12 @@ int main()
         std::cout << std::string(60, ' ') << std::endl;
         std::cout << std::string(79, '-') << std::endl;
         std::cout << setw(IOMANIP_WIDTH) << "K-nearest neighbours filename"
-                  << " | ";
+                  << " " << '|' << " ";
         //std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
         std::getline(std::cin, neighboursFilename);
 
         int k;
-        std::cout << setw(IOMANIP_WIDTH) << "K" << " | ";
+        std::cout << setw(IOMANIP_WIDTH) << "K" << " " << '|' << " ";
         std::cin >> k;
         NeuralNetworks::KNearestNeighbours kNearestNeigbours
                 { k,
@@ -725,6 +729,7 @@ int main()
 //                            trainingExamples, trainingClassLabels,
 //                            dataSetTrainingFilenames[dataSet],
 //                            neighboursFilename);
+        std::cout << "\n" << std::string(79, '-') << std::endl;
         printTestingResults(kNearestNeigbours,
                             testingExamples, testingClassLabels,
                             dataSetTestingFilenames[dataSet],
