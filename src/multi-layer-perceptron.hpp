@@ -32,6 +32,9 @@ namespace NeuralNetworks
                  std::vector<bool> const &enableBiasPerLayer);
 
         explicit MultiLayerPerceptron
+                (std::vector<AffineLayer> layers);
+
+        explicit MultiLayerPerceptron
                 (std::string const &filename);
 
         //------------------------------------------------------ | Operators <<<

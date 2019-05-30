@@ -119,6 +119,13 @@ namespace NeuralNetworks
     }
 
     MultiLayerPerceptron::MultiLayerPerceptron
+            (std::vector<AffineLayer> layers)
+            :
+            layers { std::move(layers) }
+    {
+    }
+
+    MultiLayerPerceptron::MultiLayerPerceptron
             (std::string const &filename)
     {
         readFromFile(filename);
