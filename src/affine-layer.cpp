@@ -122,6 +122,21 @@ namespace NeuralNetworks
         file.close();
     }
 
+    AffineLayer::AffineLayer
+            (AffineLayer const &affineLayer)
+            :
+            weights { affineLayer.weights },
+            deltaWeights { affineLayer.deltaWeights },
+            momentumWeights { affineLayer.momentumWeights },
+            biases { affineLayer.biases },
+            deltaBiases { affineLayer.deltaBiases },
+            momentumBiases { affineLayer.momentumBiases },
+            activationFunction { affineLayer.activationFunction->clone() },
+            currentNumberOfSteps { affineLayer.currentNumberOfSteps },
+            isBiasEnabled { affineLayer.isBiasEnabled }
+    {
+    }
+
     //---------------------------------------------------------- | Operators <<<
     Vector AffineLayer::operator()
             (Vector const &inputs) const

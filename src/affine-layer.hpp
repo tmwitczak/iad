@@ -36,6 +36,9 @@ namespace NeuralNetworks
         explicit AffineLayer
                 (std::string const &filename);
 
+        AffineLayer
+                (AffineLayer const &);
+
         //------------------------------------------------------ | Operators <<<
         Eigen::VectorXd operator()
                 (Eigen::VectorXd const &inputs) const;
