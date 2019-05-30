@@ -1,7 +1,7 @@
 #ifndef IAD_2A_MULTI_LAYER_PERCEPTRON_HPP
 #define IAD_2A_MULTI_LAYER_PERCEPTRON_HPP
 ///////////////////////////////////////////////////////////////////// | Includes
-#include "perceptron-layer.hpp"
+#include "affine-layer.hpp"
 #include "parametric-rectified-linear-unit.hpp"
 
 #include <Eigen/Eigen>
@@ -64,7 +64,7 @@ namespace NeuralNetworks
 
     private:
         //============================================================ | Data <<
-        std::vector<PerceptronLayer> layers;
+        std::vector<AffineLayer> layers;
 
         //======================================================= | Behaviour <<
         //-------------------------------------------------- | Serialization <<<

@@ -14,8 +14,8 @@ add_executable(iad-2a
                main.cpp
                multi-layer-perceptron.cpp
                multi-layer-perceptron.hpp
-               perceptron-layer.cpp
-               perceptron-layer.hpp
+               affine-layer.cpp
+               affine-layer.hpp
                training-example.hpp
                activation-function.cpp
                activation-function.hpp

@@ -1,5 +1,5 @@
-#ifndef IAD_2A_PERCEPTRON_LAYER_HPP
-#define IAD_2A_PERCEPTRON_LAYER_HPP
+#ifndef IAD_2A_AFFINE_LAYER_HPP
+#define IAD_2A_AFFINE_LAYER_HPP
 ///////////////////////////////////////////////////////////////////// | Includes
 #include "activation-function.hpp"
 #include "sigmoid.hpp"
@@ -15,7 +15,7 @@
 namespace NeuralNetworks
 {
     ///////////////////////////////////////////////// | Class: PerceptronLayer <
-    class PerceptronLayer final
+    class AffineLayer final
     {
     public:
         //========================================================= | Methods <<
@@ -24,16 +24,16 @@ namespace NeuralNetworks
                 (int seed);
 
         //--------------------------------------------------- | Constructors <<<
-        PerceptronLayer
+        AffineLayer
                 ();
 
-        explicit PerceptronLayer
+        explicit AffineLayer
                 (int numberOfInputs,
                  int numberOfOutputs,
                  ActivationFunction const &activationFunction,
                  bool enableBias);
 
-        explicit PerceptronLayer
+        explicit AffineLayer
                 (std::string const &filename);
 
         //------------------------------------------------------ | Operators <<<
@@ -110,4 +110,4 @@ namespace NeuralNetworks
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-#endif // IAD_2A_PERCEPTRON_LAYER_HPP
+#endif //IAD_2A_AFFINE_LAYER_HPP

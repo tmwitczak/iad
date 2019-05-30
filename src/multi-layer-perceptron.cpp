@@ -52,11 +52,11 @@ namespace NeuralNetworks
         }
     }
 
-    std::vector<PerceptronLayer> createLayers
+    std::vector<AffineLayer> createLayers
             (std::vector<int> const &numberOfNeuronsPerLayer,
              std::vector<bool> const &enableBiasPerLayer)
     {
-        std::vector<PerceptronLayer> layers;
+        std::vector<AffineLayer> layers;
 
         for (auto[numberOfNeurons, enableBias]
              = std::make_tuple(numberOfNeuronsPerLayer.cbegin(),
@@ -105,7 +105,7 @@ namespace NeuralNetworks
     void MultiLayerPerceptron::initialiseRandomNumberGenerator
             (int const &seed)
     {
-        PerceptronLayer::initialiseRandomNumberGenerator(seed);
+        AffineLayer::initialiseRandomNumberGenerator(seed);
     }
 
     //------------------------------------------------------- | Constructors <<<

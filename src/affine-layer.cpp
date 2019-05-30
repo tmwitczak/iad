@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////////////////// | Includes
-#include "perceptron-layer.hpp"
+#include "affine-layer.hpp"
 
 #include <cereal/archives/binary.hpp>
 #include <cereal/cereal.hpp>
@@ -76,21 +76,21 @@ namespace NeuralNetworks
     ///////////////////////////////////////////////// | Class: PerceptronLayer <
     //============================================================= | Methods <<
     //----------------------------------------------------- | Static methods <<<
-    void PerceptronLayer::initialiseRandomNumberGenerator
+    void AffineLayer::initialiseRandomNumberGenerator
             (int const seed)
     {
         srand(static_cast<unsigned int>(seed));
     }
 
     //------------------------------------------------------- | Constructors <<<
-    PerceptronLayer::PerceptronLayer
+    AffineLayer::AffineLayer
             ()
             :
-            PerceptronLayer(1, 1, Sigmoid {}, true)
+            AffineLayer(1, 1, Sigmoid {}, true)
     {
     }
 
-    PerceptronLayer::PerceptronLayer
+    AffineLayer::AffineLayer
             (int const numberOfInputs,
              int const numberOfOutputs,
              ActivationFunction const &activationFunction,
@@ -110,7 +110,7 @@ namespace NeuralNetworks
     {
     }
 
-    PerceptronLayer::PerceptronLayer
+    AffineLayer::AffineLayer
             (std::string const &filename)
     {
         std::ifstream file;
@@ -123,39 +123,39 @@ namespace NeuralNetworks
     }
 
     //---------------------------------------------------------- | Operators <<<
-    Vector PerceptronLayer::operator()
+    Vector AffineLayer::operator()
             (Vector const &inputs) const
     {
         return feedForward(inputs);
     }
 
     //----------------------------------------------------- | Main behaviour <<<
-    Vector PerceptronLayer::calculateOutputs
+    Vector AffineLayer::calculateOutputs
             (Vector const &inputs) const
     {
         return weights * inputs
                + (isBiasEnabled ? biases : Vector::Zero(biases.size()));
     }
 
-    Vector PerceptronLayer::activate
+    Vector AffineLayer::activate
             (Vector const &outputs) const
     {
         return (*activationFunction)(outputs);
     }
 
-    Vector PerceptronLayer::calculateOutputsDerivative
+    Vector AffineLayer::calculateOutputsDerivative
             (Vector const &outputs) const
     {
         return activationFunction->derivative(outputs);
     }
 
-    Vector PerceptronLayer::feedForward
+    Vector AffineLayer::feedForward
             (Vector const &inputs) const
     {
         return activate(calculateOutputs(inputs));
     }
 
-    Vector PerceptronLayer::backpropagate
+    Vector AffineLayer::backpropagate
             (Vector const &outputsDerivative,
              Vector const &errors) const
     {
@@ -163,7 +163,7 @@ namespace NeuralNetworks
                * (errors.array() * outputsDerivative.array()).matrix();
     }
 
-    void PerceptronLayer::calculateNextStep
+    void AffineLayer::calculateNextStep
             (Vector const &inputs,
              Vector const &errors,
              Vector const &outputsDerivative)
@@ -179,7 +179,7 @@ namespace NeuralNetworks
         ++currentNumberOfSteps;
     }
 
-    void PerceptronLayer::update
+    void AffineLayer::update
             (double const learningCoefficient,
              double const momentumCoefficient)
     {
@@ -189,7 +189,7 @@ namespace NeuralNetworks
         resetStepData();
     }
 
-    void PerceptronLayer::saveToFile
+    void AffineLayer::saveToFile
             (std::string const &filename) const
     {
         std::ofstream file;
@@ -202,7 +202,7 @@ namespace NeuralNetworks
     }
 
     template <typename Archive>
-    void PerceptronLayer::save
+    void AffineLayer::save
             (Archive &archive) const
     {
         archive(weights, deltaWeights, momentumWeights,
@@ -213,7 +213,7 @@ namespace NeuralNetworks
     }
 
     template <typename Archive>
-    void PerceptronLayer::load
+    void AffineLayer::load
             (Archive &archive)
     {
         archive(weights, deltaWeights, momentumWeights,
@@ -224,20 +224,20 @@ namespace NeuralNetworks
     }
 
     //------------------------------------------------------------- | Traits <<<
-    int PerceptronLayer::numberOfInputs
+    int AffineLayer::numberOfInputs
             () const
     {
         return weights.cols();
     }
 
-    int PerceptronLayer::numberOfOutputs
+    int AffineLayer::numberOfOutputs
             () const
     {
         return weights.rows();
     }
 
     //--------------------------------------------------- | Helper functions <<<
-    void PerceptronLayer::applyAverageOfDeltaStepsToMomentumStep
+    void AffineLayer::applyAverageOfDeltaStepsToMomentumStep
             (double const learningCoefficient,
              double const momentumCoefficient)
     {
@@ -262,7 +262,7 @@ namespace NeuralNetworks
                         * deltaBiases;
     }
 
-    void PerceptronLayer::applyMomentumStepToWeightsAndBiases
+    void AffineLayer::applyMomentumStepToWeightsAndBiases
             ()
     {
         weights.noalias() += momentumWeights;
@@ -271,7 +271,7 @@ namespace NeuralNetworks
             biases.noalias() += momentumBiases;
     }
 
-    void PerceptronLayer::resetStepData
+    void AffineLayer::resetStepData
             ()
     {
         currentNumberOfSteps = 0;
