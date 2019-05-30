@@ -14,8 +14,8 @@
 //////////////////////////////////////////////////// | Namespace: NeuralNetworks
 namespace NeuralNetworks
 {
-    ///////////////////////////////////////////////// | Class: PerceptronLayer <
-    class AffineLayer final
+    ///////////////////////////////////////////////////// | Class: AffineLayer <
+    class AffineLayer
     {
     public:
         //========================================================= | Methods <<
@@ -109,6 +109,76 @@ namespace NeuralNetworks
 
         void resetStepData
                 ();
+    };
+
+    ///////////////////////////////////////////// | Class: AffineLayerWithBias <
+    class AffineLayerWithBias
+            : public AffineLayer
+    {
+    public:
+        //========================================================= | Methods <<
+        //--------------------------------------------------- | Constructors <<<
+        AffineLayerWithBias
+                ();
+
+        explicit AffineLayerWithBias
+                (int numberOfInputs,
+                 int numberOfOutputs,
+                 ActivationFunction const &activationFunction);
+
+        explicit AffineLayerWithBias
+                (std::string const &filename);
+
+        AffineLayerWithBias
+                (AffineLayerWithBias const &);
+
+    private:
+        //======================================================= | Behaviour <<
+        //-------------------------------------------------- | Serialization <<<
+        friend class cereal::access;
+
+        template <typename Archive>
+        void save
+                (Archive &archive) const;
+
+        template <typename Archive>
+        void load
+                (Archive &archive);
+    };
+
+    ///////////////////////////////////////////// | Class: AffineLayerWithBias <
+    class AffineLayerWithoutBias
+            : public AffineLayer
+    {
+    public:
+        //========================================================= | Methods <<
+        //--------------------------------------------------- | Constructors <<<
+        AffineLayerWithoutBias
+                ();
+
+        explicit AffineLayerWithoutBias
+                (int numberOfInputs,
+                 int numberOfOutputs,
+                 ActivationFunction const &activationFunction);
+
+        explicit AffineLayerWithoutBias
+                (std::string const &filename);
+
+        AffineLayerWithoutBias
+                (AffineLayerWithoutBias const &);
+
+    private:
+        //======================================================= | Behaviour <<
+        //-------------------------------------------------- | Serialization <<<
+        friend class cereal::access;
+
+        template <typename Archive>
+        void save
+                (Archive &archive) const;
+
+        template <typename Archive>
+        void load
+                (Archive &archive);
     };
 }
 

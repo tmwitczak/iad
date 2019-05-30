@@ -73,7 +73,7 @@ namespace cereal
 //////////////////////////////////////////////////// | Namespace: NeuralNetworks
 namespace NeuralNetworks
 {
-    ///////////////////////////////////////////////// | Class: PerceptronLayer <
+    ///////////////////////////////////////////////////// | Class: AffineLayer <
     //============================================================= | Methods <<
     //----------------------------------------------------- | Static methods <<<
     void AffineLayer::initialiseRandomNumberGenerator
@@ -299,6 +299,106 @@ namespace NeuralNetworks
             deltaBiases.setZero();
             momentumBiases.setZero();
         }
+    }
+
+    ///////////////////////////////////////////// | Class: AffineLayerWithBias <
+    //============================================================= | Methods <<
+    //------------------------------------------------------- | Constructors <<<
+    AffineLayerWithBias::AffineLayerWithBias
+            ()
+            :
+            AffineLayerWithBias(1, 1, Sigmoid {})
+    {
+    }
+
+    AffineLayerWithBias::AffineLayerWithBias
+            (int const numberOfInputs,
+             int const numberOfOutputs,
+             ActivationFunction const &activationFunction)
+            :
+            AffineLayer { numberOfInputs,
+                          numberOfOutputs,
+                          activationFunction,
+                          true }
+    {
+    }
+
+    AffineLayerWithBias::AffineLayerWithBias
+            (std::string const &filename)
+            :
+            AffineLayer { filename }
+    {
+    }
+
+    AffineLayerWithBias::AffineLayerWithBias
+            (AffineLayerWithBias const &affineLayerWithBias)
+            :
+            AffineLayer { affineLayerWithBias }
+    {
+    }
+
+    template <typename Archive>
+    void AffineLayerWithBias::save
+            (Archive &archive) const
+    {
+        archive(*this);
+    }
+
+    template <typename Archive>
+    void AffineLayerWithBias::load
+            (Archive &archive)
+    {
+        archive(*this);
+    }
+
+    ////////////////////////////////////////// | Class: AffineLayerWithoutBias <
+    //============================================================= | Methods <<
+    //------------------------------------------------------- | Constructors <<<
+    AffineLayerWithoutBias::AffineLayerWithoutBias
+            ()
+            :
+            AffineLayerWithoutBias(1, 1, Sigmoid {})
+    {
+    }
+
+    AffineLayerWithoutBias::AffineLayerWithoutBias
+            (int const numberOfInputs,
+             int const numberOfOutputs,
+             ActivationFunction const &activationFunction)
+            :
+            AffineLayer { numberOfInputs,
+                          numberOfOutputs,
+                          activationFunction,
+                          false }
+    {
+    }
+
+    AffineLayerWithoutBias::AffineLayerWithoutBias
+            (std::string const &filename)
+            :
+            AffineLayer { filename }
+    {
+    }
+
+    AffineLayerWithoutBias::AffineLayerWithoutBias
+            (AffineLayerWithoutBias const &affineLayerWithBias)
+            :
+            AffineLayer { affineLayerWithBias }
+    {
+    }
+
+    template <typename Archive>
+    void AffineLayerWithoutBias::save
+            (Archive &archive) const
+    {
+        archive(*this);
+    }
+
+    template <typename Archive>
+    void AffineLayerWithoutBias::load
+            (Archive &archive)
+    {
+        archive(*this);
     }
 
 }
