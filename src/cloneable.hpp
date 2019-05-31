@@ -38,6 +38,9 @@ namespace NeuralNetworks
         //----------------------------------------------------------- | Main <<<
         virtual std::unique_ptr<T> clone
                 () const = 0;
+
+        virtual operator std::unique_ptr<T>
+                () const = 0;
     };
 
     //=========================================================== | Behaviour <<
