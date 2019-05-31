@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////////////////// | Includes
-#include "multi-layer-perceptron.hpp"
+#include "neural-network.hpp"
 
 #include <algorithm>
 #include <ctime>
@@ -10,7 +10,7 @@
 #include <sstream>
 #include <tuple>
 
-#include <cereal/types/vector.hpp>
+
 
 /////////////////////////////////////////////////////////// | Using declarations
 using Array = Eigen::ArrayXd;
@@ -74,13 +74,13 @@ namespace NeuralNetworks
     }
 
     double getAccuracy
-            (MultiLayerPerceptron const &multiLayerPerceptron,
+            (NeuralNetwork const &multiLayerPerceptron,
              std::vector<TrainingExample> const
              &testingExamples)
     {
         int globalNumberOfAccurateClassifications = 0;
 
-        MultiLayerPerceptron::TestingResults testingResults =
+        NeuralNetwork::TestingResults testingResults =
                 multiLayerPerceptron.test(testingExamples);
 
         for (auto const &testingResultsPerExample
@@ -99,58 +99,58 @@ namespace NeuralNetworks
         return globalAccuracy;
     }
 
-    //////////////////////////////////////////// | Class: MultiLayerPerceptron <
+    /////////////////////////////////////////////////// | Class: NeuralNetwork <
     //============================================================= | Methods <<
     //----------------------------------------------------- | Static methods <<<
-    void MultiLayerPerceptron::initialiseRandomNumberGenerator
+    void NeuralNetwork::initialiseRandomNumberGenerator
             (int const &seed)
     {
         AffineLayer::initialiseRandomNumberGenerator(seed);
     }
 
     //------------------------------------------------------- | Constructors <<<
-    MultiLayerPerceptron::MultiLayerPerceptron
-            (std::vector<int> const &numberOfNeurons,
-             std::vector<bool> const &enableBiasPerLayer)
-            :
-            layers { createLayers(numberOfNeurons,
-                                  enableBiasPerLayer) }
-    {
-    }
+//    NeuralNetwork::NeuralNetwork
+//            (std::vector<int> const &numberOfNeurons,
+//             std::vector<bool> const &enableBiasPerLayer)
+//            :
+//            layers { createLayers(numberOfNeurons,
+//                                  enableBiasPerLayer) }
+//    {
+//    }
 
-    MultiLayerPerceptron::MultiLayerPerceptron
-            (std::vector<AffineLayer> layers)
+    NeuralNetwork::NeuralNetwork
+            (std::vector<std::unique_ptr<NeuralNetworkLayer>> layers)
             :
             layers { std::move(layers) }
     {
     }
 
-    MultiLayerPerceptron::MultiLayerPerceptron
+    NeuralNetwork::NeuralNetwork
             (std::string const &filename)
     {
         readFromFile(filename);
     }
 
     //---------------------------------------------------------- | Operators <<<
-    Vector MultiLayerPerceptron::operator()
+    Vector NeuralNetwork::operator()
             (Vector const &inputs) const
     {
         return feedForward(inputs);
     }
 
     //----------------------------------------------------- | Main behaviour <<<
-    Vector MultiLayerPerceptron::feedForward
+    Vector NeuralNetwork::feedForward
             (Vector const &inputs) const
     {
         Vector neurons = inputs;
 
         for (auto const &layer : layers)
-            neurons = layer.feedForward(neurons);
+            neurons = layer->feedForward(neurons);
 
         return neurons;
     }
 
-    MultiLayerPerceptron::TrainingResults MultiLayerPerceptron::train
+    NeuralNetwork::TrainingResults NeuralNetwork::train
             (std::vector<TrainingExample> const &trainingExamples,
              std::vector<TrainingExample> const &testingExamples,
              int const numberOfEpochs,
@@ -214,11 +214,12 @@ namespace NeuralNetworks
                 for (auto const &layer
                         : layersIterators)
                 {
-                    Vector outputsDry = layer->calculateOutputs(neurons.back());
+                    Vector outputsDry = (*layer)->calculateOutputs(neurons.back
+                            ());
                     outputsDerivatives.emplace_back
-                            (layer->calculateOutputsDerivative(outputsDry));
+                            ((*layer)->calculateOutputsDerivative(outputsDry));
                     neurons.emplace_back
-                            (layer->activate(outputsDry));
+                            ((*layer)->activate(outputsDry));
                 }
 
                 auto const &lastLayerOutputs
@@ -234,14 +235,22 @@ namespace NeuralNetworks
                         { lastLayerErrors };
 
                 {
-                    auto derivatives = outputsDerivatives.crbegin();
+                    auto inputsIterator = neurons.crbegin() + 1;
+                    auto outputsIterator = neurons.crbegin();
+                    auto derivativesIterator = outputsDerivatives.crbegin();
+
                     for (auto const &layer
                             : layersIteratorsReversed)
                     {
                         errors.emplace_back
-                                (layer->backpropagate
-                                        (*derivatives, errors.back()));
-                        ++derivatives;
+                                ((*layer)->backpropagate
+                                        (*inputsIterator,
+                                         errors.back(),
+                                         *outputsIterator,
+                                         *derivativesIterator));
+                        ++inputsIterator;
+                        ++outputsIterator;
+                        ++derivativesIterator;
                     }
                     errors = HelperFunctions::reverse(errors);
                 }
@@ -252,16 +261,19 @@ namespace NeuralNetworks
                 // Calculate steps for weights and biases
                 {
                     auto inputsIterator = neurons.cbegin();
+                    auto outputsIterator = neurons.cbegin() + 1;
                     auto derivativesIterator = outputsDerivatives.cbegin();
                     auto errorsIterator = errors.cbegin() + 1;
 
                     for (auto &layer
                             : layersIterators)
                     {
-                        layer->calculateNextStep(*inputsIterator,
+                        (*layer)->calculateNextStep(*inputsIterator,
                                                  *errorsIterator,
+                                                 *outputsIterator,
                                                  *derivativesIterator);
                         ++inputsIterator;
+                        ++outputsIterator;
                         ++derivativesIterator;
                         ++errorsIterator;
                     }
@@ -270,7 +282,7 @@ namespace NeuralNetworks
                 // Update layers
                 for (auto &layer
                         : layersIterators)
-                    layer->update(learningCoefficient, momentumCoefficient);
+                    (*layer)->update(learningCoefficient, momentumCoefficient);
             }
 
             // Check if goal total error across all
@@ -281,7 +293,8 @@ namespace NeuralNetworks
                 || epoch == 0 || epoch == numberOfEpochs - 1)
             {
                 trainingResults.costPerEpochInterval.emplace_back(costPerEpoch);
-                std::cout << "\r epoch: " << epoch;
+                std::cout << "\r epoch: " << epoch << " | cost: " <<
+                costPerEpoch;
                 std::cout.flush();
 
                 trainingResults.accuracyTraining
@@ -302,7 +315,7 @@ namespace NeuralNetworks
         return trainingResults;
     }
 
-    MultiLayerPerceptron::TestingResults MultiLayerPerceptron::test
+    NeuralNetwork::TestingResults NeuralNetwork::test
             (std::vector<TrainingExample> const &testingExamples) const
     {
         // Prepare results
@@ -338,11 +351,11 @@ namespace NeuralNetworks
             for (auto const &layer
                     : layersIterators)
             {
-                Vector outputsDry = layer->calculateOutputs(neurons.back());
+                Vector outputsDry = (*layer)->calculateOutputs(neurons.back());
                 outputsDerivatives.emplace_back
-                        (layer->calculateOutputsDerivative(outputsDry));
+                        ((*layer)->calculateOutputsDerivative(outputsDry));
                 neurons.emplace_back
-                        (layer->activate(outputsDry));
+                        ((*layer)->activate(outputsDry));
             }
 
             auto const &lastLayerOutputs
@@ -358,14 +371,22 @@ namespace NeuralNetworks
                     { lastLayerErrors };
 
             {
-                auto derivatives = outputsDerivatives.crbegin();
+                auto inputsIterator = neurons.crbegin() + 1;
+                auto outputsIterator = neurons.crbegin();
+                auto derivativesIterator = outputsDerivatives.crbegin();
+
                 for (auto const &layer
                         : layersIteratorsReversed)
                 {
                     errors.emplace_back
-                            (layer->backpropagate
-                                    (*derivatives, errors.back()));
-                    ++derivatives;
+                            ((*layer)->backpropagate
+                                    (*inputsIterator,
+                                     errors.back(),
+                                     *outputsIterator,
+                                     *derivativesIterator));
+                    ++inputsIterator;
+                    ++outputsIterator;
+                    ++derivativesIterator;
                 }
                 errors = HelperFunctions::reverse(errors);
             }
@@ -389,7 +410,7 @@ namespace NeuralNetworks
         return testingResults;
     }
 
-    void MultiLayerPerceptron::saveToFile
+    void NeuralNetwork::saveToFile
             (std::string const &filename) const
     {
         std::ofstream file;
@@ -401,21 +422,7 @@ namespace NeuralNetworks
         file.close();
     }
 
-    template <typename Archive>
-    void MultiLayerPerceptron::save
-            (Archive &archive) const
-    {
-        archive(layers);
-    }
-
-    template <typename Archive>
-    void MultiLayerPerceptron::load
-            (Archive &archive)
-    {
-        archive(layers);
-    }
-
-    void MultiLayerPerceptron::readFromFile
+    void NeuralNetwork::readFromFile
             (std::string const &filename)
     {
         std::ifstream file(filename, std::ios::in | std::ios::binary);
@@ -427,39 +434,39 @@ namespace NeuralNetworks
     }
 
     //----------------------------------------------------- | Helper methods <<<
-    std::vector<Vector> MultiLayerPerceptron::feedForwardPerLayer
-            (Vector const &inputs) const
-    {
-        std::vector<Vector> outputs { inputs };
-
-        for (auto const &layer : layers)
-            outputs.emplace_back(layer.feedForward(outputs.back()));
-
-        outputs.erase(outputs.begin());
-
-        return outputs;
-    }
-
-    std::vector<Vector> MultiLayerPerceptron::backpropagateErrorsPerLayer
-            (std::vector<Vector> const &inputsPerLayer,
-             Vector const &errors) const
-    {
-        std::vector<Eigen::VectorXd> propagatedErrors { errors };
-
-        auto inputPerLayer = inputsPerLayer.rbegin();
-        for (auto layer = layers.rbegin();
-             layer != layers.rend() - 1; ++layer)
-        {
-            propagatedErrors.emplace_back
-                    (layer->backpropagate(*inputPerLayer,
-                                          propagatedErrors.back()));
-            ++inputPerLayer;
-        }
-
-        std::reverse(propagatedErrors.begin(), propagatedErrors.end());
-
-        return propagatedErrors;
-    }
+//    std::vector<Vector> NeuralNetwork::feedForwardPerLayer
+//            (Vector const &inputs) const
+//    {
+//        std::vector<Vector> outputs { inputs };
+//
+//        for (auto const &layer : layers)
+//            outputs.emplace_back(layer.feedForward(outputs.back()));
+//
+//        outputs.erase(outputs.begin());
+//
+//        return outputs;
+//    }
+//
+//    std::vector<Vector> NeuralNetwork::backpropagateErrorsPerLayer
+//            (std::vector<Vector> const &inputsPerLayer,
+//             Vector const &errors) const
+//    {
+//        std::vector<Eigen::VectorXd> propagatedErrors { errors };
+//
+//        auto inputPerLayer = inputsPerLayer.rbegin();
+//        for (auto layer = layers.rbegin();
+//             layer != layers.rend() - 1; ++layer)
+//        {
+//            propagatedErrors.emplace_back
+//                    (layer->backpropagate(*inputPerLayer,
+//                                          propagatedErrors.back()));
+//            ++inputPerLayer;
+//        }
+//
+//        std::reverse(propagatedErrors.begin(), propagatedErrors.end());
+//
+//        return propagatedErrors;
+//    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////

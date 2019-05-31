@@ -16,60 +16,6 @@ using Array = Eigen::ArrayXd;
 using Matrix = Eigen::MatrixXd;
 using Vector = Eigen::VectorXd;
 
-////////////////////////////////////////////// | cereal: Archive specialisations
-namespace cereal
-{
-    template <typename Archive>
-    void save
-            (Archive &archive,
-             Matrix const &matrix)
-    {
-        int matrixRows = matrix.rows();
-        int matrixColumns = matrix.cols();
-
-        archive(matrixRows);
-        archive(matrixColumns);
-
-        archive(binary_data(matrix.data(),
-                            matrixRows * matrixColumns * sizeof(double)));
-    }
-
-    template <typename Archive>
-    void load
-            (Archive &archive,
-             Matrix &matrix)
-    {
-        int matrixRows = matrix.rows();
-        int matrixColumns = matrix.cols();
-
-        archive(matrixRows);
-        archive(matrixColumns);
-
-        matrix.resize(matrixRows, matrixColumns);
-
-        archive(binary_data(matrix.data(),
-                            matrixRows * matrixColumns * sizeof(double)));
-    }
-
-    template <typename Archive>
-    void save
-            (Archive &archive,
-             Vector const &vector)
-    {
-        save(archive, Matrix { vector });
-    }
-
-    template <typename Archive>
-    void load
-            (Archive &archive,
-             Vector &vector)
-    {
-        Matrix vectorAsMatrix;
-        load(archive, vectorAsMatrix);
-        vector = vectorAsMatrix;
-    }
-}
-
 //////////////////////////////////////////////////// | Namespace: NeuralNetworks
 namespace NeuralNetworks
 {
@@ -96,11 +42,15 @@ namespace NeuralNetworks
              ActivationFunction const &activationFunction,
              bool const enableBias)
             :
-            weights { Matrix::Random(numberOfOutputs, numberOfInputs) },
+            NeuralNetworkLayer {},
+
+            weights { std::sqrt(2.0 / (numberOfInputs + numberOfOutputs))
+                      * Matrix::Random(numberOfOutputs, numberOfInputs) },
             deltaWeights { Matrix::Zero(numberOfOutputs, numberOfInputs) },
             momentumWeights { Matrix::Zero(numberOfOutputs, numberOfInputs) },
 
-            biases { Vector::Random(numberOfOutputs) },
+            biases { std::sqrt(2.0 / (numberOfInputs + numberOfOutputs))
+                     * Vector::Random(numberOfOutputs) },
             deltaBiases { Vector::Zero(numberOfOutputs) },
             momentumBiases { Vector::Zero(numberOfOutputs) },
 
@@ -112,6 +62,8 @@ namespace NeuralNetworks
 
     AffineLayer::AffineLayer
             (std::string const &filename)
+            :
+            NeuralNetworkLayer {}
     {
         std::ifstream file;
         file.open(filename, std::ios::binary);
@@ -125,6 +77,8 @@ namespace NeuralNetworks
     AffineLayer::AffineLayer
             (AffineLayer const &affineLayer)
             :
+            NeuralNetworkLayer { affineLayer },
+
             weights { affineLayer.weights },
             deltaWeights { affineLayer.deltaWeights },
             momentumWeights { affineLayer.momentumWeights },
@@ -142,6 +96,13 @@ namespace NeuralNetworks
             (Vector const &inputs) const
     {
         return feedForward(inputs);
+    }
+
+    //------------------------------ | Interface: Cloneable | Implementation <<<
+    std::unique_ptr<NeuralNetworkLayer> AffineLayer::clone
+            () const
+    {
+        return std::make_unique<AffineLayer>(*this);
     }
 
     //----------------------------------------------------- | Main behaviour <<<
@@ -171,8 +132,10 @@ namespace NeuralNetworks
     }
 
     Vector AffineLayer::backpropagate
-            (Vector const &outputsDerivative,
-             Vector const &errors) const
+            (Vector const &inputs,
+             Vector const &errors,
+             Vector const &outputs,
+             Vector const &outputsDerivative) const
     {
         return weights.transpose()
                * (errors.array() * outputsDerivative.array()).matrix();
@@ -181,6 +144,7 @@ namespace NeuralNetworks
     void AffineLayer::calculateNextStep
             (Vector const &inputs,
              Vector const &errors,
+             Vector const &outputs,
              Vector const &outputsDerivative)
     {
         Vector derivative = -errors.array()
@@ -214,28 +178,6 @@ namespace NeuralNetworks
             binaryOutputArchive(*this);
         }
         file.close();
-    }
-
-    template <typename Archive>
-    void AffineLayer::save
-            (Archive &archive) const
-    {
-        archive(weights, deltaWeights, momentumWeights,
-                biases, deltaBiases, momentumBiases,
-                activationFunction,
-                currentNumberOfSteps,
-                isBiasEnabled);
-    }
-
-    template <typename Archive>
-    void AffineLayer::load
-            (Archive &archive)
-    {
-        archive(weights, deltaWeights, momentumWeights,
-                biases, deltaBiases, momentumBiases,
-                activationFunction,
-                currentNumberOfSteps,
-                isBiasEnabled);
     }
 
     //------------------------------------------------------------- | Traits <<<
@@ -337,18 +279,11 @@ namespace NeuralNetworks
     {
     }
 
-    template <typename Archive>
-    void AffineLayerWithBias::save
-            (Archive &archive) const
+    //------------------------------ | Interface: Cloneable | Implementation <<<
+    std::unique_ptr<NeuralNetworkLayer> AffineLayerWithBias::clone
+            () const
     {
-        archive(*this);
-    }
-
-    template <typename Archive>
-    void AffineLayerWithBias::load
-            (Archive &archive)
-    {
-        archive(*this);
+        return std::make_unique<AffineLayerWithBias>(*this);
     }
 
     ////////////////////////////////////////// | Class: AffineLayerWithoutBias <
@@ -387,19 +322,13 @@ namespace NeuralNetworks
     {
     }
 
-    template <typename Archive>
-    void AffineLayerWithoutBias::save
-            (Archive &archive) const
+    //------------------------------ | Interface: Cloneable | Implementation <<<
+    std::unique_ptr<NeuralNetworkLayer> AffineLayerWithoutBias::clone
+            () const
     {
-        archive(*this);
+        return std::make_unique<AffineLayerWithoutBias>(*this);
     }
 
-    template <typename Archive>
-    void AffineLayerWithoutBias::load
-            (Archive &archive)
-    {
-        archive(*this);
-    }
 
 }
 

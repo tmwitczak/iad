@@ -5,17 +5,25 @@
 #include "sigmoid.hpp"
 #include "rectified-linear-unit.hpp"
 #include "training-example.hpp"
+#include "identity.hpp"
+#include "neural-network-layer.hpp"
 
 #include <Eigen/Eigen>
 #include <vector>
 #include <memory>
 #include <cereal/access.hpp>
 
+#include <cereal/types/polymorphic.hpp>
+#include <cereal/archives/binary.hpp>
+
+#include "eigen-cereal.hpp"
+
 //////////////////////////////////////////////////// | Namespace: NeuralNetworks
 namespace NeuralNetworks
 {
     ///////////////////////////////////////////////////// | Class: AffineLayer <
     class AffineLayer
+            : public NeuralNetworkLayer
     {
     public:
         //========================================================= | Methods <<
@@ -41,43 +49,50 @@ namespace NeuralNetworks
 
         //------------------------------------------------------ | Operators <<<
         Eigen::VectorXd operator()
-                (Eigen::VectorXd const &inputs) const;
+                (Eigen::VectorXd const &inputs) const override;
 
         //------------------------------------------------- | Main behaviour <<<
         Eigen::VectorXd calculateOutputs
-                (Eigen::VectorXd const &inputs) const;
+                (Eigen::VectorXd const &inputs) const override;
 
         Eigen::VectorXd activate
-                (Eigen::VectorXd const &outputs) const;
+                (Eigen::VectorXd const &outputs) const override;
 
         Eigen::VectorXd calculateOutputsDerivative
-                (Eigen::VectorXd const &outputs) const;
+                (Eigen::VectorXd const &outputs) const override;
 
         Eigen::VectorXd feedForward
-                (Eigen::VectorXd const &inputs) const;
+                (Eigen::VectorXd const &inputs) const override;
 
         Eigen::VectorXd backpropagate
-                (Eigen::VectorXd const &outputsDerivative,
-                 Eigen::VectorXd const &errors) const;
+                (Eigen::VectorXd const &inputs,
+                 Eigen::VectorXd const &errors,
+                 Eigen::VectorXd const &outputs,
+                 Eigen::VectorXd const &outputsDerivative) const override;
 
         void calculateNextStep
                 (Eigen::VectorXd const &inputs,
                  Eigen::VectorXd const &errors,
-                 Eigen::VectorXd const &outputsDerivative);
+                 Eigen::VectorXd const &outputs,
+                 Eigen::VectorXd const &outputsDerivative) override;
 
         void update
                 (double learningCoefficient,
-                 double momentumCoefficient);
+                 double momentumCoefficient) override;
 
         void saveToFile
-                (std::string const &filename) const;
+                (std::string const &filename) const override;
 
         //--------------------------------------------------------- | Traits <<<
         int numberOfInputs
-                () const;
+                () const override;
 
         int numberOfOutputs
-                () const;
+                () const override;
+
+        //-------------------------- | Interface: Cloneable | Implementation <<<
+        std::unique_ptr<NeuralNetworkLayer> clone
+                () const override;
 
     private:
         //============================================================ | Data <<
@@ -93,11 +108,25 @@ namespace NeuralNetworks
 
         template <typename Archive>
         void save
-                (Archive &archive) const;
+                (Archive &archive) const
+        {
+            archive(weights, deltaWeights, momentumWeights,
+                    biases, deltaBiases, momentumBiases,
+                    activationFunction,
+                    currentNumberOfSteps,
+                    isBiasEnabled);
+        }
 
         template <typename Archive>
         void load
-                (Archive &archive);
+                (Archive &archive)
+        {
+            archive(weights, deltaWeights, momentumWeights,
+                    biases, deltaBiases, momentumBiases,
+                    activationFunction,
+                    currentNumberOfSteps,
+                    isBiasEnabled);
+        }
 
         //----------------------------------------------- | Helper functions <<<
         void applyAverageOfDeltaStepsToMomentumStep
@@ -124,13 +153,17 @@ namespace NeuralNetworks
         explicit AffineLayerWithBias
                 (int numberOfInputs,
                  int numberOfOutputs,
-                 ActivationFunction const &activationFunction);
+                 ActivationFunction const &activationFunction = Identity {});
 
         explicit AffineLayerWithBias
                 (std::string const &filename);
 
         AffineLayerWithBias
                 (AffineLayerWithBias const &);
+
+        //-------------------------- | Interface: Cloneable | Implementation <<<
+        std::unique_ptr<NeuralNetworkLayer> clone
+                () const final;
 
     private:
         //======================================================= | Behaviour <<
@@ -139,11 +172,17 @@ namespace NeuralNetworks
 
         template <typename Archive>
         void save
-                (Archive &archive) const;
+                (Archive &archive) const
+        {
+            archive(*this);
+        }
 
         template <typename Archive>
         void load
-                (Archive &archive);
+                (Archive &archive)
+        {
+            archive(*this);
+        }
     };
 
     ///////////////////////////////////////////// | Class: AffineLayerWithBias <
@@ -159,13 +198,17 @@ namespace NeuralNetworks
         explicit AffineLayerWithoutBias
                 (int numberOfInputs,
                  int numberOfOutputs,
-                 ActivationFunction const &activationFunction);
+                 ActivationFunction const &activationFunction = Identity {});
 
         explicit AffineLayerWithoutBias
                 (std::string const &filename);
 
         AffineLayerWithoutBias
                 (AffineLayerWithoutBias const &);
+
+        //-------------------------- | Interface: Cloneable | Implementation <<<
+        std::unique_ptr<NeuralNetworkLayer> clone
+                () const final;
 
     private:
         //======================================================= | Behaviour <<
@@ -174,13 +217,37 @@ namespace NeuralNetworks
 
         template <typename Archive>
         void save
-                (Archive &archive) const;
+                (Archive &archive) const
+        {
+            archive(*this);
+        }
 
         template <typename Archive>
         void load
-                (Archive &archive);
+                (Archive &archive)
+        {
+            archive(*this);
+        }
     };
 }
+
+//////////////////////////////////////// | cereal: Polymorphic type registration
+CEREAL_REGISTER_TYPE(NeuralNetworks::AffineLayer)
+CEREAL_REGISTER_TYPE(NeuralNetworks::AffineLayerWithBias)
+CEREAL_REGISTER_TYPE(NeuralNetworks::AffineLayerWithoutBias)
+
+CEREAL_REGISTER_POLYMORPHIC_RELATION(NeuralNetworks::NeuralNetworkLayer,
+                                     NeuralNetworks::AffineLayer)
+
+CEREAL_REGISTER_POLYMORPHIC_RELATION(NeuralNetworks::AffineLayer,
+                                     NeuralNetworks::AffineLayerWithBias)
+//CEREAL_REGISTER_POLYMORPHIC_RELATION(NeuralNetworks::NeuralNetworkLayer,
+//                                     NeuralNetworks::AffineLayerWithBias)
+
+CEREAL_REGISTER_POLYMORPHIC_RELATION(NeuralNetworks::AffineLayer,
+                                     NeuralNetworks::AffineLayerWithoutBias)
+//CEREAL_REGISTER_POLYMORPHIC_RELATION(NeuralNetworks::NeuralNetworkLayer,
+//                                     NeuralNetworks::AffineLayerWithoutBias)
 
 ////////////////////////////////////////////////////////////////////////////////
 #endif //IAD_2A_AFFINE_LAYER_HPP

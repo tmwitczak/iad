@@ -23,6 +23,12 @@ namespace NeuralNetworks
         std::unique_ptr<ActivationFunction> clone
                 () const override = 0;
 
+        operator std::unique_ptr<ActivationFunction>
+                () const override
+        {
+            return clone();
+        }
+
         //----------------------------------------------------------- | Main <<<
         virtual Eigen::ArrayXd operator()
                 (Eigen::ArrayXd const &input) const = 0;

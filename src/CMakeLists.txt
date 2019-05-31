@@ -12,8 +12,8 @@ set(CMAKE_CXX_STANDARD 17)
 # Add sources and create executable target
 add_executable(iad-2a
                main.cpp
-               multi-layer-perceptron.cpp
-               multi-layer-perceptron.hpp
+               neural-network.cpp
+               neural-network.hpp
                affine-layer.cpp
                affine-layer.hpp
                training-example.hpp
@@ -25,7 +25,7 @@ add_executable(iad-2a
                rectified-linear-unit.cpp
                rectified-linear-unit.hpp
                parametric-rectified-linear-unit.cpp
-               parametric-rectified-linear-unit.hpp k-nearest-neighbours.cpp k-nearest-neighbours.hpp identity.cpp identity.hpp)
+               parametric-rectified-linear-unit.hpp k-nearest-neighbours.cpp k-nearest-neighbours.hpp identity.cpp identity.hpp radial-basis-function-layer.cpp radial-basis-function-layer.hpp neural-network-layer.cpp neural-network-layer.hpp eigen-cereal.hpp)
 
 set_target_properties(iad-2a PROPERTIES
                       RUNTIME_OUTPUT_DIRECTORY ${CMAKE_HOME_DIRECTORY})
