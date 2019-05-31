@@ -11,6 +11,13 @@ namespace NeuralNetworks
     //============================================================= | Methods <<
     //------------------------------------------------------- | Constructors <<<
     ParametricRectifiedLinearUnit::ParametricRectifiedLinearUnit
+            ()
+            :
+            ParametricRectifiedLinearUnit(0.0)
+    {
+    }
+
+    ParametricRectifiedLinearUnit::ParametricRectifiedLinearUnit
             (double const &parameter)
             :
             parameter { parameter }
