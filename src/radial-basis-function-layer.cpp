@@ -110,7 +110,7 @@ namespace NeuralNetworks
              ++i)
         {
             outputs(i)
-                    = std::exp(-biases(i)
+                    = std::exp(-std::pow(biases(i), 2)
                                * std::pow((inputs - weights.row(i)).norm(), 2));
         }
 
@@ -135,27 +135,96 @@ namespace NeuralNetworks
         return calculateOutputs(inputs);
     }
 
+    double RadialBasisFunctionLayer
+    ::calculateDerivativeOfOutputWithRespectToBias(
+            Vector const &inputs,
+            double const output,
+            Vector const &weights,
+            double const bias) const
+    {
+        double sum = 0.0;
+        for (int j = 0; j < numberOfInputs(); ++j)
+            sum += std::pow(inputs(j) - weights(j), 2);
+
+        return output
+               * (-sum)
+               * 2.0 * bias;
+    }
+    double RadialBasisFunctionLayer
+    ::calculateDerivativeOfOutputWithRespectToWeight(
+            double const input,
+            double const output,
+            double const weight,
+            double const bias) const
+    {
+        return output
+               * (-std::pow(bias, 2))
+               * 2.0 * (input - weight)
+               * (-1.0);
+    }
+    double RadialBasisFunctionLayer
+    ::calculateDerivativeOfOutputWithRespectToInput(
+            double const input,
+            double const output,
+            double const weight,
+            double const bias) const
+    {
+        return output
+               * (-std::pow(bias, 2))
+               * 2.0 * (input - weight)
+               * 1.0;
+    }
+    double RadialBasisFunctionLayer
+    ::calculateDerivativeOfCostWithRespectToOutput(double const error) const
+    {
+        return -error;
+    }
+    double RadialBasisFunctionLayer::calculateDerivativeOfCostWithRespectToInput
+            (double const input,
+             Vector const &weights,
+             Vector const &errors,
+             Vector const &outputs,
+             Vector const &outputsDerivative) const
+    {
+        double derivativeOfCostWithRespectToInput = 0.0;
+
+        for (int i = 0;
+             i < numberOfOutputs();
+             ++i)
+        {
+            derivativeOfCostWithRespectToInput
+                    += calculateDerivativeOfCostWithRespectToOutput(errors(i))
+                       * outputsDerivative(i)
+                       * calculateDerivativeOfOutputWithRespectToInput(
+                               input, outputs(i), biases(i), weights(i)
+                               );
+
+        }
+
+        return derivativeOfCostWithRespectToInput;
+    }
+
     Vector RadialBasisFunctionLayer::backpropagate
             (Vector const &inputs,
              Vector const &errors,
              Vector const &outputs,
              Vector const &outputsDerivative) const
     {
-        Vector propagatedError { numberOfInputs() };
-        for (int x = 0; x < numberOfInputs(); ++x)
-        {
-            double sum1 = 0.0;
-            for (int i = 0; i < numberOfOutputs(); ++i)
-            {
-                double sum2 = 0.0;
-                sum2 += 2.0 * (inputs(x) - weights(i, x)) * 1.0;
+        Vector backpropagatedErrors { numberOfInputs() };
 
-                sum1 += (-errors(i)) * outputsDerivative(i) * outputs(i) *
-                        (-biases(i)) * sum2;
-            }
-            propagatedError(x) = -sum1;
+        for (int j = 0;
+             j < numberOfInputs();
+             ++j)
+        {
+            backpropagatedErrors(j)
+                    = -calculateDerivativeOfCostWithRespectToInput
+                            (inputs(j), weights.col(j),
+                             errors,
+                             outputs,
+                             outputsDerivative);
         }
-        return propagatedError;
+
+        return backpropagatedErrors;
     }
 
     void RadialBasisFunctionLayer::calculateNextStep
@@ -167,18 +236,32 @@ namespace NeuralNetworks
         for (int i = 0; i < numberOfOutputs(); ++i)
             for (int j = 0; j < numberOfInputs(); ++j)
             {
+                deltaWeights(i, j)
+                        -= calculateDerivativeOfCostWithRespectToOutput(errors
+                                (i)) * outputsDerivative(i) *
+                                        calculateDerivativeOfOutputWithRespectToWeight(
+                                                inputs(j), outputs(j),
+                                                weights(i, j), biases(i)
+                                                );
                 // TODO: Include derivative of activation function
-                deltaWeights(i, j) -= -errors(i)
+                /*deltaWeights(i, j) -= -errors(i)
                                       * outputsDerivative(i)
                                       * outputs(i)
                                       * (-biases(i))
                                       * 2.0 * (inputs(j) - weights(i, j)) *
-                                      (-1.0);
+                                      (-1.0);*/
             }
 
         for (int i = 0; i < numberOfOutputs(); ++i)
         {
-            double sumOfSomething = 0.0;
+            deltaBiases(i)
+                -= calculateDerivativeOfCostWithRespectToOutput(errors(i))
+                        * outputsDerivative(i) *
+                        calculateDerivativeOfOutputWithRespectToBias(
+                                inputs, outputs(i), weights.row(i), biases(i)
+                                );
+
+            /*double sumOfSomething = 0.0;
             for (int j = 0; j < numberOfInputs(); ++j)
             {
                 sumOfSomething += std::pow(inputs(j) - weights(i, j), 2);
@@ -187,7 +270,7 @@ namespace NeuralNetworks
             deltaBiases(i) -= -errors(i)
                               * outputsDerivative(i)
                               * outputs(i)
-                              * (-sumOfSomething);
+                              * (-sumOfSomething);*/
         }
 
         ++currentNumberOfSteps;

@@ -134,6 +134,34 @@ namespace NeuralNetworks
 
         void resetStepData
                 ();
+
+
+        double calculateDerivativeOfOutputWithRespectToInput(
+                double const input,
+                double const output,
+                double const weight,
+                double const bias) const;
+
+        double calculateDerivativeOfCostWithRespectToOutput(double const
+        error) const;
+        double calculateDerivativeOfCostWithRespectToInput
+                (double const input,
+                 Vector const &weights,
+                 Vector const &errors,
+                 Vector const &outputs,
+                 Vector const &outputsDerivative) const;
+
+        double calculateDerivativeOfOutputWithRespectToWeight(
+                double const input,
+                double const output,
+                double const weight,
+                double const bias) const;
+
+        double calculateDerivativeOfOutputWithRespectToBias(
+                Vector const &inputs,
+                double const output,
+                Vector const &weights,
+                double const bias) const;
     };
 }
 
