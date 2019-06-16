@@ -15,6 +15,7 @@
 #include <fstream>
 #include <utility>
 #include <list>
+#include <random>
 
 using namespace std;
 using namespace NeuralNetworks;
@@ -140,7 +141,7 @@ std::vector<std::string>::const_iterator askUserForInput
     std::cin >> userInput;
 
     for (int i = 0; i < options.size(); i++)
-        if (i == userInput)
+        if (i == userInput - 1)
             return options.cbegin() + i;
 
     std::cout << "Wrong input!\n";
@@ -521,14 +522,14 @@ void printTestingResults(KNearestNeighbours const &kNearestNeighbours,
 int main
         ()
 {
-    NeuralNetwork::initialiseRandomNumberGenerator(time(nullptr));
+/*    NeuralNetwork::initialiseRandomNumberGenerator(time(nullptr));
 
     std::vector<std::unique_ptr<NeuralNetworkLayer>> layers;
-    layers.emplace_back(RadialBasisFunctionLayer { 1, 100 });
-    layers.emplace_back(AffineLayerWithBias { 100, 100,
+    layers.emplace_back(RadialBasisFunctionLayer { 1, 10 });
+    layers.emplace_back(AffineLayerWithBias { 10, 10,
                                               ParametricRectifiedLinearUnit
-                                                      { 0.01 }});
-    layers.emplace_back(AffineLayerWithBias { 100, 1 });
+                                              {0.01}});
+    layers.emplace_back(AffineLayerWithBias { 10, 1 });
     NeuralNetwork neuralNetwork(std::move(layers));
 
     std::vector<TrainingExample> trainingExamples;
@@ -551,8 +552,8 @@ int main
             neuralNetwork.train
                     (trainingExamples,
                      trainingExamples,
-                     1000,
-                     0.0, 0.01, 0.0, 0.8, true, 10);
+                     10000,
+                     0.0, 0.0001, 0.0, 0.8, true, 10);
 
     for (int i = 0; i < trainingResults.costPerEpochInterval.size(); i++)
         std::cout << i * 10 << " | " << trainingResults
@@ -562,7 +563,7 @@ int main
 
     Vector test { 1 };
     test << 0.5;
-    std::cout << "\n\n" << neuralNetwork(test) << "\n";
+    std::cout << "\n\n" << neuralNetwork(test) << "\n"; */
 //
 //    Vector input { 4 };
 //    Vector target { 4 };
@@ -608,8 +609,9 @@ int main
 //    std::cout << "\noutput\n\n" << output2 << "\n";
 //    std::cout << "\nerror\n\n" << error2 << "\n";
 
-    return 0;
+    //return 0;
     //------------------------------
+    // Choose function to approximate
     std::cout << std::string(79, '/') << std::endl;
     std::vector<std::string> functions
             { "sqrt(x)",
@@ -618,6 +620,7 @@ int main
     auto const chosenFunction
             = askUserForInput("Choose function", functions);
 
+    // Choose network architecture
     std::cout << "\n";
     std::cout << std::string(79, '-') << std::endl;
     std::vector<std::string> architectures
@@ -635,6 +638,7 @@ int main
     auto const architecture
             = askUserForInput("Choose network architecture", architectures);
 
+    // Choose mode
     std::cout << std::endl;
     std::cout << std::string(79, '-') << std::endl;
     std::vector<std::string> modes
@@ -643,6 +647,7 @@ int main
     auto const mode
             = askUserForInput("Choose mode", modes);
 
+    // Enter network filename
     std::string neuralNetworkFilename;
     std::cout << "\n";
     std::cout << std::string(79, '-') << std::endl;
@@ -652,17 +657,164 @@ int main
     std::getline(cin, neuralNetworkFilename);
 
     // Create training and testing examples for chosen function
-//        auto const[trainingExamples, trainingClassLabels]
-//        = readTrainingExamplesFromCsvFile
-//                (dataSetTrainingFilenames[dataSet]);
-//
-//        auto const[testingExamples, testingClassLabels]
-//        = readTrainingExamplesFromCsvFile
-//                (dataSetTestingFilenames[dataSet]);
+    int const numberOfTrainingPoints = 16;
+    int const numberOfTestingPoints = 2500;
+    std::list<TrainingExample> trainingExamples;
+    std::list<TrainingExample> testingExamples;
 
-    // Prepare perceptron
-    NeuralNetwork::initialiseRandomNumberGenerator
-            (static_cast<int>(time(nullptr)));
+    auto randomNumberGenerator
+            = std::mt19937 { std::random_device {}() };
+
+    if (*chosenFunction == "sqrt(x)")
+    {
+        for (int i = 0; i < numberOfTrainingPoints; ++i)
+        {
+            double const interval = (10.0 - 0.0) /
+                    (double) numberOfTrainingPoints;
+            double const low = 0.0 + interval * i;
+            double const high = 0.0 + interval * (i + 1);
+
+            std::uniform_real_distribution<double>
+                    uniformRealDistribution(low, high);
+
+
+            TrainingExample trainingExample { Vector { 1 }, Vector { 1 }};
+            trainingExample.inputs(0)
+                    = uniformRealDistribution(randomNumberGenerator);
+            trainingExample.outputs(0) = std::sqrt(
+                    trainingExample.inputs(0));
+            trainingExamples.push_back(trainingExample);
+        }
+        for (int i = 0; i < numberOfTestingPoints; ++i)
+        {
+            double const interval = (10.0 - 0.0) / (double)
+                    numberOfTestingPoints;
+            double const low = 0.0 + interval * i;
+            double const high = 0.0 + interval * (i + 1);
+
+            std::uniform_real_distribution<double>
+                    uniformRealDistribution(low, high);
+
+            TrainingExample testingExample { Vector { 1 }, Vector { 1 }};
+            testingExample.inputs(0)
+                    = uniformRealDistribution(randomNumberGenerator);
+            testingExample.outputs(0) = std::sqrt(
+                    testingExample.inputs(0));
+            testingExamples.push_back(testingExample);
+        }
+    }
+    else if (*chosenFunction == "sin(x)")
+    {
+        for (int i = 0; i < numberOfTrainingPoints; ++i)
+        {
+            double const interval = (10.0 - (-10.0)) /
+                    (double) numberOfTrainingPoints;
+            double const low = -10.0 + interval * i;
+            double const high = -10.0 + interval * (i + 1);
+
+            std::uniform_real_distribution<double>
+                    uniformRealDistribution(low, high);
+
+            TrainingExample trainingExample { Vector { 1 }, Vector { 1 }};
+            trainingExample.inputs(0)
+                    = uniformRealDistribution(randomNumberGenerator);
+            trainingExample.outputs(0) = std::sin(
+                    trainingExample.inputs(0));
+            trainingExamples.push_back(trainingExample);
+        }
+        for (int i = 0; i < numberOfTestingPoints; ++i)
+        {
+            double const interval = (10.0 - (-10.0)) /
+                    (double) numberOfTestingPoints;
+            double const low = -10.0 + interval * i;
+            double const high = -10.0 + interval * (i + 1);
+
+            std::uniform_real_distribution<double>
+                    uniformRealDistribution(low, high);
+
+            TrainingExample testingExample { Vector { 1 }, Vector { 1 }};
+            testingExample.inputs(0)
+                    = uniformRealDistribution(randomNumberGenerator);
+            testingExample.outputs(0) = std::sin(
+                    testingExample.inputs(0));
+            testingExamples.push_back(testingExample);
+        }
+    }
+    else if (*chosenFunction == "sin(x1 * x2) + cos(3*(x1 - x2))")
+    {
+        for (int i = 0; i < std::sqrt(numberOfTrainingPoints); ++i)
+        {
+            double const interval = (3.0 - (-3.0)) /
+                    (double) std::sqrt(numberOfTrainingPoints);
+            double const low1 = -3.0 + interval * i;
+            double const high1 = -3.0 + interval * (i + 1);
+
+            std::uniform_real_distribution<double>
+                    uniformRealDistribution1(low1, high1);
+
+            for (int j = 0; j < std::sqrt(numberOfTrainingPoints); ++j)
+            {
+                double const low2 = -3.0 + interval * j;
+                double const high2 = -3.0 + interval * (j + 1);
+
+                std::uniform_real_distribution<double>
+                        uniformRealDistribution2(low2, high2);
+
+                TrainingExample trainingExample { Vector { 2 }, Vector { 1 }};
+                trainingExample.inputs(0)
+                        = uniformRealDistribution1(randomNumberGenerator);
+                trainingExample.inputs(1)
+                        = uniformRealDistribution2(randomNumberGenerator);
+                trainingExample.outputs(0)
+                    = std::sin(trainingExample.inputs(0) *
+                            trainingExample.inputs(1)) + std::cos(
+                                    3.0 * (trainingExample.inputs(0) -
+                                    trainingExample.inputs(1))
+                                    );
+                trainingExamples.push_back(trainingExample);
+            }
+        }
+        for (int i = 0; i < std::sqrt(numberOfTestingPoints); ++i)
+        {
+            double const interval = (3.0 - (-3.0)) /
+                    (double) numberOfTestingPoints;
+            double const low1 = -3.0 + interval * i;
+            double const high1 = -3.0 + interval * (i + 1);
+
+            std::uniform_real_distribution<double>
+                    uniformRealDistribution1(low1, high1);
+
+            for (int j = 0; j < std::sqrt(numberOfTestingPoints); ++j)
+            {
+                double const low2 = -3.0 + interval * j;
+                double const high2 = -3.0 + interval * (j + 1);
+
+                std::uniform_real_distribution<double>
+                        uniformRealDistribution2(low2, high2);
+
+                TrainingExample testingExample { Vector { 2 }, Vector { 1 }};
+                testingExample.inputs(0)
+                        = uniformRealDistribution1(randomNumberGenerator);
+                testingExample.inputs(1)
+                        = uniformRealDistribution2(randomNumberGenerator);
+                testingExample.outputs(0)
+                        = std::sin(testingExample.inputs(0) *
+                                   testingExample.inputs(1)) + std::cos(
+                        3.0 * (testingExample.inputs(0) -
+                               testingExample.inputs(1))
+                );
+                testingExamples.push_back(testingExample);
+            }
+        }
+    }
+
+    for (auto const &tr : trainingExamples)
+    {
+        std::cout << tr.inputs(0) << " " << tr.inputs(1) << std::endl;
+    }
+
+    // Prepare MLP
+    NeuralNetwork::initialiseRandomNumberGenerator(static_cast<int>(time(nullptr)));
 
     // Do the math :)
     if (mode == modes.cbegin())
