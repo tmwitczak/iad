@@ -12,7 +12,7 @@ with open(sys.argv[1]) as \
 
 plt.plot([float(i[0]) for i in data],
          [float(i[1]) for i in data])
-plt.title('Funkcja kosztu dla ' + os.path.splitext(sys.argv[1])[0])
+plt.title('Funkcja kosztu dla ' + sys.argv[1])
 plt.xlabel('Liczba epok')
 plt.ylabel('Koszt')
 plt.autoscale()
