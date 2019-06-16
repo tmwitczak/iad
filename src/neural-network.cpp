@@ -9,6 +9,8 @@
 #include <fstream>
 #include <sstream>
 #include <tuple>
+#include <iomanip>
+#include <cmath>
 
 
 
@@ -51,6 +53,7 @@ namespace NeuralNetworks
             return reversedContainer;
         }
     }
+
 
     std::vector<AffineLayer> createLayers
             (std::vector<int> const &numberOfNeuronsPerLayer,
@@ -153,6 +156,7 @@ namespace NeuralNetworks
     NeuralNetwork::TrainingResults NeuralNetwork::train
             (std::vector<TrainingExample> const &trainingExamples,
              std::vector<TrainingExample> const &testingExamples,
+             std::vector<TrainingExample> const &testingExtrapolationExamples,
              int const numberOfEpochs,
              double const costGoal,
              double learningCoefficient,
@@ -256,7 +260,8 @@ namespace NeuralNetworks
                 }
 
                 // Increment epoch's total cost
-                costPerEpoch += errors.back().array().square().sum();
+                costPerEpoch += errors.back().array().square().sum() /
+                        trainingExamples.size();
 
                 // Calculate steps for weights and biases
                 {
@@ -285,24 +290,35 @@ namespace NeuralNetworks
                     (*layer)->update(learningCoefficient, momentumCoefficient);
             }
 
+            if (std::isnan(costPerEpoch))
+            {
+                std::cout << "Wszystkiemu winne kremówki..." << std::endl;
+            }
             // Check if goal total error across all
             // training examples was achieved
-            costPerEpoch /= trainingExamples.size();
+            //costPerEpoch /= trainingExamples.size();
 
             if (epoch % trainingResults.epochInterval == 0
                 || epoch == 0 || epoch == numberOfEpochs - 1)
             {
-                trainingResults.costPerEpochInterval.emplace_back(costPerEpoch);
-                std::cout << "\r epoch: " << epoch << " | cost: " <<
-                costPerEpoch;
-                std::cout.flush();
+                trainingResults.costPerEpochIntervalTraining
+                        .emplace_back(costPerEpoch);
 
-                trainingResults.accuracyTraining
-                        .emplace_back(getAccuracy(*this,
-                                                  trainingExamples));
-                trainingResults.accuracyTesting
-                        .emplace_back(getAccuracy(*this,
-                                                  testingExamples));
+                trainingResults.costPerEpochIntervalTesting
+                        .emplace_back(test(testingExamples).globalCost);
+                trainingResults.costPerEpochIntervalTestingExtrapolation
+                        .emplace_back(test(testingExtrapolationExamples).globalCost);
+
+                std::cout << "\r"
+                          << "> Epoch: " << std::setw(10) << epoch
+                          << " | Cost (training): " << std::setw(10) << trainingResults
+                          .costPerEpochIntervalTraining.back()
+                          << " | Cost (testing): " << std::setw(10) << trainingResults
+                          .costPerEpochIntervalTesting.back()
+                          << " | Cost (testing extrapolation): "<<  std::setw(10)
+                              << trainingResults
+                                         .costPerEpochIntervalTestingExtrapolation.back();
+                std::cout.flush();
             }
 
             if (costPerEpoch < costGoal)
@@ -393,7 +409,7 @@ namespace NeuralNetworks
 
             // Calculate cost
             double cost = errors.back().array().square().sum();
-            testingResults.globalCost += cost;
+            testingResults.globalCost += cost / testingExamples.size();
 
             // Save testing results per example
             testingResults.testingResultsPerExample.push_back
@@ -404,7 +420,7 @@ namespace NeuralNetworks
         }
 
         // Average out global error
-        testingResults.globalCost /= testingExamples.size();
+        //testingResults.globalCost /= testingExamples.size();
 
         // Return testing report
         return testingResults;

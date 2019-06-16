@@ -150,33 +150,15 @@ std::vector<std::string>::const_iterator askUserForInput
 
 void saveErrorToFile
         (std::string const &filename,
-         NeuralNetwork::TrainingResults const &trainingResults)
+         std::vector<double> const &costPerEpochInterval,
+         int const epochInterval)
 {
     std::ofstream file(filename, std::ios::trunc);
-    for (int i = 0; i < trainingResults.costPerEpochInterval.size(); i++)
-        file << i * trainingResults.epochInterval << ","
-             << trainingResults.costPerEpochInterval.at(i) << "\n";
+    for (int i = 0; i < costPerEpochInterval.size(); i++)
+        file << i * epochInterval << ","
+             << costPerEpochInterval.at(i) << "\n";
 }
 
-void saveTrainingAccuracyToFile
-        (std::string const &filename,
-         NeuralNetwork::TrainingResults const &trainingResults)
-{
-    std::ofstream file(filename, std::ios::trunc);
-    for (int i = 0; i < trainingResults.costPerEpochInterval.size(); i++)
-        file << i * trainingResults.epochInterval << ","
-             << trainingResults.accuracyTraining.at(i) << "\n";
-}
-
-void saveTestingAccuracyToFile
-        (std::string const &filename,
-         NeuralNetwork::TrainingResults const &trainingResults)
-{
-    std::ofstream file(filename, std::ios::trunc);
-    for (int i = 0; i < trainingResults.costPerEpochInterval.size(); i++)
-        file << i * trainingResults.epochInterval << ","
-             << trainingResults.accuracyTesting.at(i) << "\n";
-}
 
 std::string braces
         (std::string const &str)
@@ -377,7 +359,7 @@ void printTestingResults
          std::vector<TrainingExample> const &testingExamples,
          std::vector<std::string> const &testingClassLabels,
          std::string const &testFilename,
-         std::string const &perceptronFilename,
+         std::string const &neuralNetworkFilename,
          bool const additionalTestingDump)
 {
     NeuralNetwork::TestingResults testingResults
@@ -388,12 +370,12 @@ void printTestingResults
     printAccuracy(std::cout, testingExamples, testingClassLabels,
                   testFilename, testingResults);
 
-    std::string dirName = "testing-results_" + perceptronFilename;
+    std::string dirName = "testing-results_" + neuralNetworkFilename;
     {
         //system(("rmdir \"" + dirName + "\" /s /q").data());
         system(("if not exist \"" + dirName + "\" mkdir \"" + dirName + "\"")
                        .data());
-        std::ofstream file(dirName + "/" + perceptronFilename
+        std::ofstream file(dirName + "/" + neuralNetworkFilename
                            + ".analysis", std::ios::out | std::ios::trunc);
         printAccuracy(file, testingExamples, testingClassLabels,
                       testFilename, testingResults);
@@ -402,7 +384,7 @@ void printTestingResults
     // Additional info to file
     if (additionalTestingDump)
     {
-        std::ofstream file(dirName + "/" + perceptronFilename
+        std::ofstream file(dirName + "/" + neuralNetworkFilename
                            + ".information",
                            std::ios::out | std::ios::trunc);
 
@@ -516,30 +498,142 @@ void printTestingResults(KNearestNeighbours const &kNearestNeighbours,
 //    std::unique_ptr<ActivationFunction> ptr;
 //};
 
-
-
-////////////////////////////////////////////////////////////// | Project: iad-2a
-int main
-        ()
+void createPlotForThirdFunction(NeuralNetwork const &neuralNetwork, std::string
+const &filenameNet, std::string const &filenameActual)
 {
-/*    NeuralNetwork::initialiseRandomNumberGenerator(time(nullptr));
+    {
+        std::vector<double> x;
+        std::vector<double> yNet;
+        std::vector<double> yActual;
+        int const resolution = 1024;
+        std::ofstream fileNet(filenameNet + "1", std::ios::trunc);
+        std::ofstream fileActual(filenameActual + "1", std::ios::trunc);
+
+        for (int i = 0; i < resolution; ++i)
+        {
+            double const interval = (3.0 - (-3.0)) /
+                                    (double) resolution;
+            Vector xVec { 2 };
+            xVec(0) = -3.0 + interval * i;
+            xVec(1) = 0.0;
+
+            x.push_back(xVec(0));
+            yNet.push_back(neuralNetwork(xVec)(0));
+            yActual.push_back(std::sin(xVec(0) * xVec(1)
+                                       + std::cos(3.0 * (xVec(0) - xVec(1)))));
+
+            fileNet << x.back() << ","
+                    << yNet.back() << "\n";
+
+            fileActual << x.back() << ","
+                       << yActual.back() << "\n";
+        }
+    }
+    {
+        std::vector<double> x;
+        std::vector<double> yNet;
+        std::vector<double> yActual;
+        int const resolution = 1024;
+        std::ofstream fileNet(filenameNet + "2", std::ios::trunc);
+        std::ofstream fileActual(filenameActual + "2", std::ios::trunc);
+
+        for (int i = 0; i < resolution; ++i)
+        {
+            double const interval = (3.0 - (-3.0)) /
+                                    (double) resolution;
+            Vector xVec { 2 };
+            xVec(0) = 0.0;
+            xVec(1) = -3.0 + interval * i;
+
+            x.push_back(xVec(1));
+            yNet.push_back(neuralNetwork(xVec)(0));
+            yActual.push_back(std::sin(xVec(0) * xVec(1)
+                                       + std::cos(3.0 * (xVec(0) - xVec(1)))));
+
+            fileNet << x.back() << ","
+                    << yNet.back() << "\n";
+
+            fileActual << x.back() << ","
+                       << yActual.back() << "\n";
+        }
+    }
+}
+void createPlotForSin(NeuralNetwork const &neuralNetwork, std::string const
+&filenameNet, std::string const &filenameActual)
+{
+    std::vector<double> x;
+    std::vector<double> yNet;
+    std::vector<double> yActual;
+    int const resolution = 1024;
+    std::ofstream fileNet(filenameNet, std::ios::trunc);
+    std::ofstream fileActual(filenameActual, std::ios::trunc);
+
+    for (int i = 0; i < resolution; ++i)
+    {
+        double const interval = (10.0 - (-10.0)) /
+                                (double) resolution;
+        Vector xVec { 1 };
+        xVec(0) = -10.0 + interval * i;
+
+        x.push_back(xVec(0));
+        yNet.push_back(neuralNetwork(xVec)(0));
+        yActual.push_back(std::sin(xVec(0)));
+
+        fileNet << x.back() << ","
+                << yNet.back() << "\n";
+
+        fileActual << x.back() << ","
+                   << yActual.back() << "\n";
+    }
+}
+void createPlotForSqrt(NeuralNetwork const &neuralNetwork, std::string const
+&filenameNet, std::string const &filenameActual)
+{
+    std::vector<double> x;
+    std::vector<double> yNet;
+    std::vector<double> yActual;
+    int const resolution = 1024;
+    std::ofstream fileNet(filenameNet, std::ios::trunc);
+    std::ofstream fileActual(filenameActual, std::ios::trunc);
+
+    for (int i = 0; i < resolution; ++i)
+    {
+        double const interval = (10.0 - 0.0) /
+                                (double) resolution;
+        Vector xVec { 1 };
+        xVec(0) = 0.0 + interval * i;
+
+        x.push_back(xVec(0));
+        yNet.push_back(neuralNetwork(xVec)(0));
+        yActual.push_back(std::sqrt(xVec(0)));
+
+        fileNet << x.back() << ","
+             << yNet.back() << "\n";
+
+        fileActual << x.back() << ","
+                   << yActual.back() << "\n";
+    }
+}
+void testFun()
+{
+    NeuralNetwork::initialiseRandomNumberGenerator(time(nullptr));
 
     std::vector<std::unique_ptr<NeuralNetworkLayer>> layers;
-    layers.emplace_back(RadialBasisFunctionLayer { 1, 10 });
+    layers.emplace_back(RadialBasisFunctionLayer { 2, 10 });
     layers.emplace_back(AffineLayerWithBias { 10, 10,
                                               ParametricRectifiedLinearUnit
-                                              {0.01}});
+                                                      {0.01}});
     layers.emplace_back(AffineLayerWithBias { 10, 1 });
     NeuralNetwork neuralNetwork(std::move(layers));
 
     std::vector<TrainingExample> trainingExamples;
     for (int i = 0; i < 1000; i++)
     {
-        Vector input { 1 };
-        input << (double(i) / 1000.0);
+        Vector input { 2 };
+        input << (double(i) / 1000.0), (double(i) / 1000.0);
 
         Vector output { 1 };
-        output << std::sqrt(input(0));
+        output << std::sqrt(input(0) + input(1));
 
         TrainingExample tr = { input, output };
         trainingExamples.push_back(tr);
@@ -552,18 +646,24 @@ int main
             neuralNetwork.train
                     (trainingExamples,
                      trainingExamples,
+                     trainingExamples,
                      10000,
                      0.0, 0.0001, 0.0, 0.8, true, 10);
 
-    for (int i = 0; i < trainingResults.costPerEpochInterval.size(); i++)
+    for (int i = 0; i < trainingResults.costPerEpochIntervalTraining.size(); i++)
         std::cout << i * 10 << " | " << trainingResults
-                .costPerEpochInterval[i] << "\n";
+                .costPerEpochIntervalTraining[i] << "\n";
     //std::cout << "\n\n" << trainingResults.costPerEpochInterval.back() <<
     // "\n";
 
-    Vector test { 1 };
-    test << 0.5;
-    std::cout << "\n\n" << neuralNetwork(test) << "\n"; */
+    Vector test { 2 };
+    test << 0.5, 0.5;
+    std::cout << "\n\n" << neuralNetwork(test) << "\n";
+}
+////////////////////////////////////////////////////////////// | Project: iad-2a
+int main
+        ()
+{
 //
 //    Vector input { 4 };
 //    Vector target { 4 };
@@ -608,8 +708,6 @@ int main
 //    std::cout << "\ninput\n\n" << input << "\n";
 //    std::cout << "\noutput\n\n" << output2 << "\n";
 //    std::cout << "\nerror\n\n" << error2 << "\n";
-
-    //return 0;
     //------------------------------
     // Choose function to approximate
     std::cout << std::string(79, '/') << std::endl;
@@ -639,13 +737,25 @@ int main
             = askUserForInput("Choose network architecture", architectures);
 
     // Choose mode
-    std::cout << std::endl;
-    std::cout << std::string(79, '-') << std::endl;
+    //std::cout << std::endl;
+    //std::cout << std::string(79, '-') << std::endl;
     std::vector<std::string> modes
             { "Training",
               "Testing" };
-    auto const mode
-            = askUserForInput("Choose mode", modes);
+    auto const mode = modes.cbegin();
+            //= askUserForInput("Choose mode", modes);
+
+    // Enter number of points for training and testing
+    int numberOfTrainingPoints;
+    int numberOfTestingPoints;
+    std::cout << "\n";
+    std::cout << std::string(79, '-') << std::endl;
+    std::cout << setw(IOMANIP_WIDTH) << "Number of training examples"
+              << '|' << " ";
+    std::cin >> numberOfTrainingPoints;
+    std::cout << setw(IOMANIP_WIDTH) << "Number of testing examples"
+              << '|' << " ";
+    std::cin >> numberOfTestingPoints;
 
     // Enter network filename
     std::string neuralNetworkFilename;
@@ -657,10 +767,8 @@ int main
     std::getline(cin, neuralNetworkFilename);
 
     // Create training and testing examples for chosen function
-    int const numberOfTrainingPoints = 16;
-    int const numberOfTestingPoints = 2500;
-    std::list<TrainingExample> trainingExamples;
-    std::list<TrainingExample> testingExamples;
+    std::vector<TrainingExample> trainingExamples;
+    std::vector<TrainingExample> testingExamples;
 
     auto randomNumberGenerator
             = std::mt19937 { std::random_device {}() };
@@ -808,171 +916,188 @@ int main
         }
     }
 
-    for (auto const &tr : trainingExamples)
-    {
-        std::cout << tr.inputs(0) << " " << tr.inputs(1) << std::endl;
-    }
-
     // Prepare MLP
     NeuralNetwork::initialiseRandomNumberGenerator(static_cast<int>(time(nullptr)));
 
     // Do the math :)
-    if (mode == modes.cbegin())
+    std::vector<std::unique_ptr<NeuralNetworkLayer>> layers;
+
+    if (architecture == architectures.cbegin())
     {
         // Neuron number
         std::string hiddenLayerNeuronNumber;
         std::cout << setw(IOMANIP_WIDTH) << "Neurons in hidden layers"
                   << '|' << " ";
         std::getline(std::cin, hiddenLayerNeuronNumber);
+
+
+        layers.emplace_back(AffineLayerWithBias { (int)trainingExamples.back()
+        .inputs.size(),
+                                                  std::stoi
+        (hiddenLayerNeuronNumber),
+                                                  Sigmoid {} });
+        layers.emplace_back(AffineLayerWithBias { std::stoi(hiddenLayerNeuronNumber), 1 });
     }
-//        std::vector<int> layersNeurons;
-//        layersNeurons.push_back
-//                (static_cast<int>(trainingExamples.at(0).inputs.size()));
-//
-//        for (auto const &neurons : split(hiddenLayerNeuronNumber, " "))
-//            layersNeurons.push_back(std::stoi(neurons.data()));
-//
-//        layersNeurons.push_back
-//                (static_cast<int>(trainingExamples.at(0).outputs.size()));
+    if (architecture == architectures.cbegin() + 1)
+    {
+        // Neuron number
+        std::string hiddenLayerNeuronNumber;
+        std::cout << setw(IOMANIP_WIDTH) << "Neurons in hidden layers"
+                  << '|' << " ";
+        std::getline(std::cin, hiddenLayerNeuronNumber);
 
 
-//        NeuralNetwork multiLayerPerceptron
-//                { layersNeurons,
-//                  biasesPerLayer };
-//
-//            // Get parameters
-//            int numberOfEpochs;
-//            double costGoal;
-//            double learningCoefficientStart;
-//            double learningCoefficientEnd;
-//            double momentumCoefficient;
-//            bool shuffleTrainingData;
-//            int epochInterval;
-//
-//            std::cout << setw(IOMANIP_WIDTH) << "Number of epochs" << " " << '|' << " ";
-//            std::cin >> numberOfEpochs;
-//            std::cout << setw(IOMANIP_WIDTH) << "Cost goal" << " " << '|' << " ";
-//            std::cin >> costGoal;
-//            std::cout << setw(IOMANIP_WIDTH) << "Learning coefficient (start)"
-//                      << " " << '|' << " ";
-//            std::cin >> learningCoefficientStart;
-//            std::cout << setw(IOMANIP_WIDTH) << "Learning coefficient (end)"
-//                      << " " << '|' << " ";
-//            std::cin >> learningCoefficientEnd;
-//            std::cout << setw(IOMANIP_WIDTH) << "Momentum coefficient" << " " << '|' << " ";
-//            std::cin >> momentumCoefficient;
-//            std::cout << setw(IOMANIP_WIDTH) << "Shuffle training data"
-//                      << " " << '|' << " ";
-//            std::cin >> shuffleTrainingData;
-//            std::cout << setw(IOMANIP_WIDTH) << "Epoch interval" << " " << '|' << " ";
-//            std::cin >> epochInterval;
-//
-//            // Train
-//            NeuralNetwork::TrainingResults trainingResults
-//                    = multiLayerPerceptron.train(trainingExamples,
-//                                                 testingExamples,
-//                                                 numberOfEpochs,
-//                                                 costGoal,
-//                                                 learningCoefficientStart,
-//                                                 learningCoefficientEnd
-//                                                 - learningCoefficientStart,
-//                                                 momentumCoefficient,
-//                                                 shuffleTrainingData,
-//                                                 epochInterval);
-//
-//            // Document learning
-//            multiLayerPerceptron.saveToFile(perceptronFilename);
-//
-//            std::string dirName = "training-results_" + perceptronFilename;
-//            std::string plotErrorName = dirName + "/"
-//                                        + perceptronFilename + ".cost";
-//            std::string plotTrainingAccuracyName = dirName + "/"
-//                                                   + perceptronFilename +
-//                                                   ".training-accuracy";
-//            std::string plotTestingAccuracyName = dirName + "/"
-//                                                  + perceptronFilename
-//                                                  + ".testing-accuracy";
-//            system(("rmdir \"" + dirName + "\" /s /q").data());
-//            system(("mkdir \"" + dirName + "\"").data());
-//            saveErrorToFile(plotErrorName, trainingResults);
-//            saveTrainingAccuracyToFile(plotTrainingAccuracyName,
-//                                       trainingResults);
-//            saveTestingAccuracyToFile(plotTestingAccuracyName, trainingResults);
-//            {
-//                std::ofstream file(dirName + "/" + perceptronFilename
-//                                   + ".parameters", std::ios::trunc);
-//                file << "Number of epochs: " << numberOfEpochs
-//                     << "\nCost goal: " << costGoal
-//                     << "\nLearning coefficient (start): "
-//                     << learningCoefficientStart
-//                     << "\nLearning coefficient (end): "
-//                     << learningCoefficientEnd
-//                     << "\nMomentum coefficient: " << momentumCoefficient
-//                     << "\nShuffle training data: " << bool(shuffleTrainingData)
-//                     << "\nEpoch interval: " << epochInterval;
-//            }
-//            system(("plot-cost-function.py " + plotErrorName).data());
-//            system(("plot-training-accuracy.py " +
-//                    plotTrainingAccuracyName).data());
-//            system(("plot-testing-accuracy.py " +
-//                    plotTestingAccuracyName).data());
+        layers.emplace_back(RadialBasisFunctionLayer{ int(trainingExamples
+        .back().inputs.size()), std::stoi
+        (hiddenLayerNeuronNumber)});
+        layers.emplace_back(AffineLayerWithBias { std::stoi(hiddenLayerNeuronNumber), 1 });
+    }
+    if (architecture == architectures.cbegin() + 2)
+    {
+        // Neuron number
+        std::string hiddenLayerNeuronNumber;
+        std::cout << setw(IOMANIP_WIDTH) << "Neurons in hidden layers"
+                  << '|' << " ";
+        std::getline(std::cin, hiddenLayerNeuronNumber);
+
+        std::vector<int> layersNeurons;
+        for (auto const &neurons : split(hiddenLayerNeuronNumber, " "))
+            layersNeurons.push_back(std::stoi(neurons.data()));
+
+        layers.emplace_back(RadialBasisFunctionLayer{ (int)trainingExamples
+        .back().inputs.size(),
+                                                      layersNeurons.at
+        (0)});
+        layers.emplace_back(AffineLayerWithBias { layersNeurons.at(0),
+                                                  layersNeurons.at(1),
+                                                          Sigmoid {}});
+        layers.emplace_back(AffineLayerWithBias { layersNeurons.at(1), 1});
+    }
+
+    NeuralNetwork neuralNetwork(std::move(layers));
+
+    // Get parameters
+    int numberOfEpochs;
+    double costGoal;
+    double learningCoefficientStart;
+    double learningCoefficientEnd;
+    double momentumCoefficient;
+    bool shuffleTrainingData;
+    int epochInterval;
+
+    std::cout << setw(IOMANIP_WIDTH) << "Number of epochs" << " " << '|' << " ";
+    std::cin >> numberOfEpochs;
+    std::cout << setw(IOMANIP_WIDTH) << "Cost goal" << " " << '|' << " ";
+    std::cin >> costGoal;
+    std::cout << setw(IOMANIP_WIDTH) << "Learning coefficient (start)"
+              << " " << '|' << " ";
+    std::cin >> learningCoefficientStart;
+    std::cout << setw(IOMANIP_WIDTH) << "Learning coefficient (end)"
+              << " " << '|' << " ";
+    std::cin >> learningCoefficientEnd;
+    std::cout << setw(IOMANIP_WIDTH) << "Momentum coefficient" << " " << '|' << " ";
+    std::cin >> momentumCoefficient;
+    std::cout << setw(IOMANIP_WIDTH) << "Shuffle training data"
+              << " " << '|' << " ";
+    std::cin >> shuffleTrainingData;
+    std::cout << setw(IOMANIP_WIDTH) << "Epoch interval" << " " << '|' << " ";
+    std::cin >> epochInterval;
+
+    // Train
+    NeuralNetwork::TrainingResults trainingResults
+            = neuralNetwork.train(trainingExamples,
+                                         testingExamples,
+                                         testingExamples, // TODO:
+                                         // EXTRAPOLATION!
+                                         numberOfEpochs,
+                                         costGoal,
+                                         learningCoefficientStart,
+                                         learningCoefficientEnd
+                                         - learningCoefficientStart,
+                                         momentumCoefficient,
+                                         shuffleTrainingData,
+                                         epochInterval);
+
+    // Document learning
+    //neuralNetwork.saveToFile(neuralNetworkFilename);
+
+    std::string dirName = "training-results_" + neuralNetworkFilename;
+    std::string plotFunction = dirName + "/"
+                                       + neuralNetworkFilename + ".plot";
+    std::string plotCostNameTraining = dirName + "/"
+                                + neuralNetworkFilename + ".training-cost";
+    std::string plotCostNameTesting = dirName + "/"
+                                      + neuralNetworkFilename + ".testing-cost";
+    std::string plotCostNameTestingExtrapolation
+    = dirName + "/" + neuralNetworkFilename + ".testing-extrapolation-cost";
+
+    system(("rmdir \"" + dirName + "\" /s /q").data());
+    system(("mkdir \"" + dirName + "\"").data());
+
+    if (chosenFunction == functions.cbegin())
+    {
+        createPlotForSqrt(neuralNetwork, plotFunction + ".net",
+                plotFunction + ".actual");
+        system(("python plot-sqrt.py " + plotFunction).data());
+    }
+    if (chosenFunction == functions.cbegin()+1)
+    {
+        createPlotForSin(neuralNetwork, plotFunction + ".net",
+                          plotFunction + ".actual");
+        system(("python plot-sin.py " + plotFunction).data());
+    }
+    if (chosenFunction == functions.cbegin()+2)
+    {
+        createPlotForThirdFunction(neuralNetwork, plotFunction + ".net",
+                         plotFunction + ".actual");
+        system(("python plot-thirdfunction.py " + plotFunction).data());
+    }
+
+    saveErrorToFile(plotCostNameTraining, trainingResults
+    .costPerEpochIntervalTraining, trainingResults.epochInterval);
+    saveErrorToFile(plotCostNameTesting, trainingResults
+    .costPerEpochIntervalTesting, trainingResults.epochInterval);
+    saveErrorToFile(plotCostNameTestingExtrapolation, trainingResults
+    .costPerEpochIntervalTestingExtrapolation, trainingResults.epochInterval);
+    {
+        std::ofstream file(dirName + "/" + neuralNetworkFilename
+                           + ".parameters", std::ios::trunc);
+        file << "Number of epochs: " << numberOfEpochs
+             << "\nCost goal: " << costGoal
+             << "\nLearning coefficient (start): "
+             << learningCoefficientStart
+             << "\nLearning coefficient (end): "
+             << learningCoefficientEnd
+             << "\nMomentum coefficient: " << momentumCoefficient
+             << "\nShuffle training data: " << bool(shuffleTrainingData)
+             << "\nEpoch interval: " << epochInterval;
+    }
+
+
+    system(("python plot-cost-function.py " + plotCostNameTraining).data());
+    system(("python plot-cost-function.py " + plotCostNameTesting).data());
+    system(("python plot-cost-function.py " + plotCostNameTestingExtrapolation).data());
 //        }
 //        else
 //        {
-//            NeuralNetwork multiLayerPerceptron(perceptronFilename);
+//            NeuralNetwork multiLayerPerceptron(neuralNetworkFilename);
 //
 //            std::cout << "\n" << std::string(79, '-') << std::endl;
 //            printTestingResults(multiLayerPerceptron,
 //                                trainingExamples, trainingClassLabels,
 //                                dataSetTrainingFilenames[dataSet],
-//                                perceptronFilename, false);
+//                                neuralNetworkFilename, false);
 //
 //            std::cout << "\n" << std::string(79, '-') << std::endl;
 //            printTestingResults(multiLayerPerceptron,
 //                                testingExamples, testingClassLabels,
 //                                dataSetTestingFilenames[dataSet],
-//                                perceptronFilename, true);
+//                                neuralNetworkFilename, true);
 //        }
 //    }
-//    else if (classifier == "K-nearest neighbours")
-//    {
-//        // Load training and testing examples from file
-//        auto const[trainingExamples, trainingClassLabels]
-//        = readTrainingExamplesFromCsvFile
-//                (dataSetTrainingFilenames[dataSet]);
 //
-//        auto const[testingExamples, testingClassLabels]
-//        = readTrainingExamplesFromCsvFile
-//                (dataSetTestingFilenames[dataSet]);
-//
-//        std::string neighboursFilename;
-//        std::cout << std::string(60, ' ') << std::endl;
-//        std::cout << std::string(79, '-') << std::endl;
-//        std::cout << setw(IOMANIP_WIDTH) << "K-nearest neighbours filename"
-//                  << " " << '|' << " ";
-//        //std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-//        std::getline(std::cin, neighboursFilename);
-//
-//        int k;
-//        std::cout << setw(IOMANIP_WIDTH) << "K" << " " << '|' << " ";
-//        std::cin >> k;
-//        NeuralNetworks::KNearestNeighbours kNearestNeigbours
-//                { k,
-//                  trainingExamples };
-//
-////        printTestingResults(kNearestNeigbours,
-////                            trainingExamples, trainingClassLabels,
-////                            dataSetTrainingFilenames[dataSet],
-////                            neighboursFilename);
-//        std::cout << "\n" << std::string(79, '-') << std::endl;
-//        printTestingResults(kNearestNeigbours,
-//                            testingExamples, testingClassLabels,
-//                            dataSetTestingFilenames[dataSet],
-//                            neighboursFilename, false);
-//
-//    }
-//
-//    std::cout << "\n\n";
-//    std::cout << std::string(79, '/') << std::endl;
-//    return 0;
+    std::cout << "\n\n";
+    std::cout << std::string(79, '/') << std::endl;
+
+    return 0;
 }

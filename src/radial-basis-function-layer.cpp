@@ -111,7 +111,8 @@ namespace NeuralNetworks
         {
             outputs(i)
                     = std::exp(-std::pow(biases(i), 2)
-                               * std::pow((inputs - weights.row(i)).norm(), 2));
+                               * (inputs - Vector(weights.row(i)))
+                                           .squaredNorm());
         }
 
         return outputs;
@@ -218,7 +219,7 @@ namespace NeuralNetworks
         {
             backpropagatedErrors(j)
                     = -calculateDerivativeOfCostWithRespectToInput
-                            (inputs(j), weights.col(j),
+                            (inputs(j), Vector{weights.col(j)},
                              errors,
                              outputs,
                              outputsDerivative);
@@ -258,7 +259,8 @@ namespace NeuralNetworks
                 -= calculateDerivativeOfCostWithRespectToOutput(errors(i))
                         * outputsDerivative(i) *
                         calculateDerivativeOfOutputWithRespectToBias(
-                                inputs, outputs(i), weights.row(i), biases(i)
+                                inputs, outputs(i), Vector {weights.row(i)},
+                                biases(i)
                                 );
 
             /*double sumOfSomething = 0.0;
