@@ -511,7 +511,7 @@ const &filenameNet, std::string const &filenameActual)
 
         for (int i = 0; i < resolution; ++i)
         {
-            double const interval = (3.0 - (-3.0)) /
+            double const interval = (9.0 - (-3.0)) /
                                     (double) resolution;
             Vector xVec { 2 };
             xVec(0) = -3.0 + interval * i;
@@ -539,7 +539,7 @@ const &filenameNet, std::string const &filenameActual)
 
         for (int i = 0; i < resolution; ++i)
         {
-            double const interval = (3.0 - (-3.0)) /
+            double const interval = (9.0 - (-3.0)) /
                                     (double) resolution;
             Vector xVec { 2 };
             xVec(0) = 0.0;
@@ -570,7 +570,7 @@ void createPlotForSin(NeuralNetwork const &neuralNetwork, std::string const
 
     for (int i = 0; i < resolution; ++i)
     {
-        double const interval = (10.0 - (-10.0)) /
+        double const interval = (30.0 - (-10.0)) /
                                 (double) resolution;
         Vector xVec { 1 };
         xVec(0) = -10.0 + interval * i;
@@ -598,7 +598,7 @@ void createPlotForSqrt(NeuralNetwork const &neuralNetwork, std::string const
 
     for (int i = 0; i < resolution; ++i)
     {
-        double const interval = (10.0 - 0.0) /
+        double const interval = (20.0 - 0.0) /
                                 (double) resolution;
         Vector xVec { 1 };
         xVec(0) = 0.0 + interval * i;
@@ -769,6 +769,7 @@ int main
     // Create training and testing examples for chosen function
     std::vector<TrainingExample> trainingExamples;
     std::vector<TrainingExample> testingExamples;
+    std::vector<TrainingExample> testingExtrapolationExamples;
 
     auto randomNumberGenerator
             = std::mt19937 { std::random_device {}() };
@@ -810,6 +811,23 @@ int main
                     testingExample.inputs(0));
             testingExamples.push_back(testingExample);
         }
+        for (int i = 0; i < numberOfTestingPoints; ++i)
+        {
+            double const interval = (20.0 - 10.0) / (double)
+                    numberOfTestingPoints;
+            double const low = 10.0 + interval * i;
+            double const high = 10.0 + interval * (i + 1);
+
+            std::uniform_real_distribution<double>
+                    uniformRealDistribution(low, high);
+
+            TrainingExample testingExample { Vector { 1 }, Vector { 1 }};
+            testingExample.inputs(0)
+                    = uniformRealDistribution(randomNumberGenerator);
+            testingExample.outputs(0) = std::sqrt(
+                    testingExample.inputs(0));
+            testingExtrapolationExamples.push_back(testingExample);
+        }
     }
     else if (*chosenFunction == "sin(x)")
     {
@@ -846,6 +864,23 @@ int main
             testingExample.outputs(0) = std::sin(
                     testingExample.inputs(0));
             testingExamples.push_back(testingExample);
+        }
+        for (int i = 0; i < numberOfTestingPoints; ++i)
+        {
+            double const interval = (30.0 - 10.0) /
+                                    (double) numberOfTestingPoints;
+            double const low = 10.0 + interval * i;
+            double const high = 10.0 + interval * (i + 1);
+
+            std::uniform_real_distribution<double>
+                    uniformRealDistribution(low, high);
+
+            TrainingExample testingExample { Vector { 1 }, Vector { 1 }};
+            testingExample.inputs(0)
+                    = uniformRealDistribution(randomNumberGenerator);
+            testingExample.outputs(0) = std::sin(
+                    testingExample.inputs(0));
+            testingExtrapolationExamples.push_back(testingExample);
         }
     }
     else if (*chosenFunction == "sin(x1 * x2) + cos(3*(x1 - x2))")
@@ -914,6 +949,38 @@ int main
                 testingExamples.push_back(testingExample);
             }
         }
+        for (int i = 0; i < std::sqrt(numberOfTestingPoints); ++i)
+        {
+            double const interval = (9.0 - 3.0) /
+                                    (double) numberOfTestingPoints;
+            double const low1 = 3.0 + interval * i;
+            double const high1 = 3.0 + interval * (i + 1);
+
+            std::uniform_real_distribution<double>
+                    uniformRealDistribution1(low1, high1);
+
+            for (int j = 0; j < std::sqrt(numberOfTestingPoints); ++j)
+            {
+                double const low2 = 3.0 + interval * j;
+                double const high2 = 3.0 + interval * (j + 1);
+
+                std::uniform_real_distribution<double>
+                        uniformRealDistribution2(low2, high2);
+
+                TrainingExample testingExample { Vector { 2 }, Vector { 1 }};
+                testingExample.inputs(0)
+                        = uniformRealDistribution1(randomNumberGenerator);
+                testingExample.inputs(1)
+                        = uniformRealDistribution2(randomNumberGenerator);
+                testingExample.outputs(0)
+                        = std::sin(testingExample.inputs(0) *
+                                   testingExample.inputs(1)) + std::cos(
+                        3.0 * (testingExample.inputs(0) -
+                               testingExample.inputs(1))
+                );
+                testingExtrapolationExamples.push_back(testingExample);
+            }
+        }
     }
 
     // Prepare MLP
@@ -946,7 +1013,6 @@ int main
                   << '|' << " ";
         std::getline(std::cin, hiddenLayerNeuronNumber);
 
-
         layers.emplace_back(RadialBasisFunctionLayer{ int(trainingExamples
         .back().inputs.size()), std::stoi
         (hiddenLayerNeuronNumber)});
@@ -972,6 +1038,64 @@ int main
                                                   layersNeurons.at(1),
                                                           Sigmoid {}});
         layers.emplace_back(AffineLayerWithBias { layersNeurons.at(1), 1});
+    }
+
+    if (architecture != architectures.cbegin())
+    {
+        Matrix newWeights = layers[0]->getWeights();
+
+        if (chosenFunction == functions.cbegin())
+        {
+            for (int i = 0; i < newWeights.rows(); ++i)
+            {
+                double const interval = (10.0 - 0.0) /
+                                        (double) newWeights.rows();
+                double const low = 0.0 + interval * i;
+                double const high = 0.0 + interval * (i + 1);
+
+                std::uniform_real_distribution<double>
+                        uniformRealDistribution(low, high);
+
+                newWeights.row(i)(0)
+                        = uniformRealDistribution(randomNumberGenerator);
+            }
+        }
+        if (chosenFunction == functions.cbegin() + 1)
+        {
+            for (int i = 0; i < newWeights.rows(); ++i)
+            {
+                double const interval = (10.0 - (-10.0)) /
+                                        (double) newWeights.rows();
+                double const low = -10.0 + interval * i;
+                double const high = -10.0 + interval * (i + 1);
+
+                std::uniform_real_distribution<double>
+                        uniformRealDistribution(low, high);
+
+                newWeights.row(i)(0)
+                        = uniformRealDistribution(randomNumberGenerator);
+            }
+        }
+        if (chosenFunction == functions.cbegin() + 2)
+        {
+            for (int i = 0; i < newWeights.rows(); ++i)
+            {
+                double const interval = (3.0 - (-3.0)) /
+                                        (double) newWeights.rows();
+                double const low = -3.0 + interval * i;
+                double const high = -3.0 + interval * (i + 1);
+
+                std::uniform_real_distribution<double>
+                        uniformRealDistribution(low, high);
+
+                newWeights.row(i)(0)
+                        = uniformRealDistribution(randomNumberGenerator);
+                newWeights.row(i)(1)
+                        = uniformRealDistribution(randomNumberGenerator);
+            }
+        }
+
+        layers[0]->setWeights(newWeights);
     }
 
     NeuralNetwork neuralNetwork(std::move(layers));
@@ -1007,8 +1131,7 @@ int main
     NeuralNetwork::TrainingResults trainingResults
             = neuralNetwork.train(trainingExamples,
                                          testingExamples,
-                                         testingExamples, // TODO:
-                                         // EXTRAPOLATION!
+                                         testingExtrapolationExamples,
                                          numberOfEpochs,
                                          costGoal,
                                          learningCoefficientStart,
@@ -1051,6 +1174,75 @@ int main
         createPlotForThirdFunction(neuralNetwork, plotFunction + ".net",
                          plotFunction + ".actual");
         system(("python plot-thirdfunction.py " + plotFunction).data());
+    }
+
+    if (architecture != architectures.cbegin())
+    {
+        Matrix weights = neuralNetwork.layers.at(0)->getWeights();
+        Vector biases = neuralNetwork.layers.at(0)->getBiases();
+
+        /*for (int i = 0; i < weights.rows(); i++)
+        {
+            Vector temp = neuralNetwork(Vector { weights.row(i) });
+            weights.row(i) = temp;
+        }*/
+
+        {
+            std::ofstream file1(plotFunction
+                                + ".rbf-weights", std::ios::trunc);
+            for (int i = 0; i < weights.rows(); i++)
+            {
+                for (int j = 0; j < weights.cols(); j++)
+                {
+                    file1 << weights(i, j);
+                    if (j != weights.cols() - 1)
+                        file1 << ",";
+                }
+                file1 << "\n";
+            }
+            file1.flush();
+            file1.close();
+
+            std::ofstream file3(plotFunction
+                                + ".rbf-weights-net", std::ios::trunc);
+            for (int i = 0; i < weights.rows(); i++)
+            {
+                file3 << neuralNetwork(Vector{weights.row(i)})(0);
+                file3 << "\n";
+            }
+            file3.flush();
+            file3.close();
+
+            std::ofstream file2(plotFunction
+                                + ".rbf-biases", std::ios::trunc);
+            for (int i = 0; i < (int)biases.size(); i++)
+            {
+                file2 << std::pow(biases(i), 2) + 0.000000001 << "\n";
+            }
+            file2.flush();
+            file2.close();
+        }
+
+        if (chosenFunction == functions.cbegin() + 2)
+            ;//system(("python plot-circles-3.py " + plotFunction).data());
+        else if (chosenFunction == functions.cbegin() + 1)
+            system(("python plot-circles.py " + plotFunction + " sin").data());
+        else if (chosenFunction == functions.cbegin())
+            system(("python plot-circles.py " + plotFunction + " sqrt").data());
+    }
+
+    {
+        std::ofstream file(plotFunction
+                           + ".test-errors", std::ios::trunc);
+        for (int i = 0; i < testingExamples.size(); i++)
+        {
+            file << (testingExamples[i].outputs -
+                    neuralNetwork(testingExamples[i].inputs)).array().sum()
+                    << "\n";
+        }
+
+        system(("python error-histogram.py " + plotFunction + ".test-errors")
+                .data());
     }
 
     saveErrorToFile(plotCostNameTraining, trainingResults

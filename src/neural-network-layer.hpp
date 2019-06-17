@@ -14,6 +14,9 @@ namespace NeuralNetworks
             : private Cloneable<NeuralNetworkLayer>
     {
     public:
+        virtual Eigen::MatrixXd getWeights() = 0;
+        virtual void setWeights(Eigen::MatrixXd const &w) = 0;
+        virtual Eigen::VectorXd getBiases() = 0;
         //======================================================= | Behaviour <<
         //----------------------------------------------------- | Destructor <<<
         ~NeuralNetworkLayer

@@ -26,6 +26,19 @@ namespace NeuralNetworks
             : public NeuralNetworkLayer
     {
     public:
+
+        Eigen::VectorXd getBiases()
+        {
+            return biases;
+        }
+        void setWeights(Eigen::MatrixXd const &w)
+        {
+            weights = w;
+        }
+        Eigen::MatrixXd getWeights()
+        {
+            return weights;
+        }
         //========================================================= | Methods <<
         //------------------------------------------------- | Static methods <<<
         static void initialiseRandomNumberGenerator

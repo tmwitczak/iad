@@ -72,7 +72,7 @@ namespace NeuralNetworks
         void readFromFile
                 (std::string const &filename);
 
-    private:
+    public:
         //============================================================ | Data <<
         std::vector<std::unique_ptr<NeuralNetworkLayer>> layers;
 
