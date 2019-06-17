@@ -1,0 +1,7 @@
+Number of epochs: 2500
+Cost goal: 0
+Learning coefficient (start): 0.1
+Learning coefficient (end): 0.01
+Momentum coefficient: 0.25
+Shuffle training data: 1
+Epoch interval: 10
